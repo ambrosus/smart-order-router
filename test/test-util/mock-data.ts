@@ -1,8 +1,8 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Currency, Ether, Token } from '@uniswap/sdk-core';
+import { ChainId, Currency, Ether, Token } from '@sigismund/sdk-core';
 import { TokenList } from '@uniswap/token-lists';
-import { Pair } from '@uniswap/v2-sdk';
-import { encodeSqrtRatioX96, FeeAmount, Pool } from '@uniswap/v3-sdk';
+import { Pair } from '@sigismund/v2-sdk';
+import { encodeSqrtRatioX96, FeeAmount, Pool } from '@sigismund/v3-sdk';
 import _ from 'lodash';
 import {
   AlphaRouterConfig,

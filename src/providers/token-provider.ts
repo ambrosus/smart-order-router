@@ -1,7 +1,7 @@
 import { Interface } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
 import { parseBytes32String } from '@ethersproject/strings';
-import { ChainId, Token } from '@uniswap/sdk-core';
+import { ChainId, Token } from '@sigismund/sdk-core';
 import _ from 'lodash';
 
 import { IERC20Metadata__factory } from '../types/v3/factories/IERC20Metadata__factory';
@@ -471,7 +471,7 @@ export const USDC_BASE = new Token(
   'USD Base Coin'
 )
 
-// Base Goerli Tokens 
+// Base Goerli Tokens
 export const USDC_BASE_GOERLI = new Token(
   ChainId.BASE_GOERLI,
   '0x853154e2A5604E5C74a2546E2871Ad44932eB92C',
@@ -537,6 +537,24 @@ export const WBTC_MOONBEAM = new Token(
   'WBTC',
   'Wrapped BTC bridged using Multichain'
 );
+
+export const USDC_AIRDAO_TEST = new Token(
+  ChainId.AIRDAO_TEST,
+  '0xdd82283Fc93Aa4373B6B27a7B25EB3A770fc3aba',
+  18,
+  'USDC',
+  'USD Coin'
+);
+
+export const BOND_AIRDAO_TEST = new Token(
+  ChainId.AIRDAO_TEST,
+  '0x3baEAb018E7ec713813C1b6A742Cd00341962eed',
+  18,
+  'BOND',
+  'AirDAO Bond'
+);
+
+//TODO: Add other airdao test tokens
 
 export class TokenProvider implements ITokenProvider {
   constructor(

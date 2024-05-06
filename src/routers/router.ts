@@ -4,22 +4,22 @@ import {
   MixedRouteSDK,
   Protocol,
   Trade,
-} from '@uniswap/router-sdk';
+} from '@sigismund/router-sdk';
 import {
   Currency,
   Fraction,
   Percent,
   Token,
   TradeType,
-} from '@uniswap/sdk-core';
-import { SwapOptions as UniversalRouterSwapOptions } from '@uniswap/universal-router-sdk';
-import { Route as V2RouteRaw } from '@uniswap/v2-sdk';
+} from '@sigismund/sdk-core';
+import { SwapOptions as UniversalRouterSwapOptions } from '@sigismund/universal-router-sdk';
+import { Route as V2RouteRaw } from '@sigismund/v2-sdk';
 import {
   Pool,
   Position,
   MethodParameters as SDKMethodParameters,
   Route as V3RouteRaw,
-} from '@uniswap/v3-sdk';
+} from '@sigismund/v3-sdk';
 
 import { SimulationStatus } from '../providers';
 import { CurrencyAmount } from '../util/amounts';

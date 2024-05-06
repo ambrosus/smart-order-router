@@ -1,4 +1,4 @@
-import { ChainId, Token } from '@uniswap/sdk-core';
+import { ChainId, Token } from '@sigismund/sdk-core';
 import _ from 'lodash';
 
 import { log, WRAPPED_NATIVE_CURRENCY } from '../util';
@@ -25,6 +25,7 @@ import {
   ETH_BNB,
   ITokenProvider,
   TokenAccessor,
+  USDC_AIRDAO_TEST,
   USDC_ARBITRUM,
   USDC_ARBITRUM_GOERLI,
   USDC_AVAX,
@@ -143,7 +144,11 @@ export const CACHE_SEED_TOKENS: {
   [ChainId.BASE]: {
     USDC: USDC_BASE,
     WETH: WRAPPED_NATIVE_CURRENCY[ChainId.BASE],
-  }
+  },
+  [ChainId.AIRDAO_TEST]: {
+    USDC: USDC_AIRDAO_TEST,
+    WETH: WRAPPED_NATIVE_CURRENCY[ChainId.AIRDAO_TEST],
+  },
   // Currently we do not have providers for Moonbeam mainnet or Gnosis testnet
 };
 

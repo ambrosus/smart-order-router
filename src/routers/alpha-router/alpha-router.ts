@@ -1,10 +1,10 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers';
+import { Protocol, SwapRouter, Trade, ZERO } from '@sigismund/router-sdk';
+import { ChainId, Currency, Fraction, Token, TradeType } from '@sigismund/sdk-core';
+import { Pool, Position, SqrtPriceMath, TickMath } from '@sigismund/v3-sdk';
 import DEFAULT_TOKEN_LIST from '@uniswap/default-token-list';
-import { Protocol, SwapRouter, Trade, ZERO } from '@uniswap/router-sdk';
-import { ChainId, Currency, Fraction, Token, TradeType } from '@uniswap/sdk-core';
 import { TokenList } from '@uniswap/token-lists';
-import { Pool, Position, SqrtPriceMath, TickMath } from '@uniswap/v3-sdk';
 import retry from 'async-retry';
 import JSBI from 'jsbi';
 import _ from 'lodash';
@@ -853,7 +853,7 @@ export class AlphaRouter
           ...routingConfig,
           /// @dev We do not want to query for mixedRoutes for routeToRatio as they are not supported
           /// [Protocol.V3, Protocol.V2] will make sure we only query for V3 and V2
-          protocols: [Protocol.V3, Protocol.V2],
+          protocols: [Protocol.V3],
         }
       );
       if (!swap) {

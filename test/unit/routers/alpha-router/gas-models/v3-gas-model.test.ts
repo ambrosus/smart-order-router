@@ -1,4 +1,4 @@
-import { Currency, CurrencyAmount, Ether, Token } from '@uniswap/sdk-core';
+import { Currency, CurrencyAmount, Ether, Token } from '@sigismund/sdk-core';
 import { BigNumber } from 'ethers';
 import _ from 'lodash';
 import {

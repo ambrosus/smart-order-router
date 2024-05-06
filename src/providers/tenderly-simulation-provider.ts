@@ -1,10 +1,10 @@
 import { MaxUint256 } from '@ethersproject/constants';
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { ChainId } from '@uniswap/sdk-core';
+import { ChainId } from '@sigismund/sdk-core';
 import {
   PERMIT2_ADDRESS,
   UNIVERSAL_ROUTER_ADDRESS,
-} from '@uniswap/universal-router-sdk';
+} from '@sigismund/universal-router-sdk';
 import axios, { AxiosRequestConfig } from 'axios';
 import { BigNumber } from 'ethers/lib/ethers';
 

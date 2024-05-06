@@ -1,4 +1,4 @@
-import { ChainId } from '@uniswap/sdk-core';
+import { ChainId } from '@sigismund/sdk-core';
 import retry from 'async-retry';
 import Timeout from 'await-timeout';
 import axios from 'axios';

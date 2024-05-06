@@ -1,6 +1,6 @@
-import { Protocol } from '@uniswap/router-sdk';
-import { ChainId, Token, TradeType } from '@uniswap/sdk-core';
-import { FeeAmount } from '@uniswap/v3-sdk';
+import { Protocol } from '@sigismund/router-sdk';
+import { ChainId, Token, TradeType } from '@sigismund/sdk-core';
+import { FeeAmount } from '@sigismund/v3-sdk';
 import _ from 'lodash';
 
 import { ITokenListProvider, IV2SubgraphProvider, V2SubgraphPool, } from '../../../providers';

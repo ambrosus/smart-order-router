@@ -1,14 +1,14 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@uniswap/router-sdk';
+import { Protocol } from '@sigismund/router-sdk';
 import {
   ChainId,
   Currency,
   CurrencyAmount,
   Token,
   TradeType,
-} from '@uniswap/sdk-core';
-import { Pair } from '@uniswap/v2-sdk/dist/entities';
-import { FeeAmount, Pool } from '@uniswap/v3-sdk';
+} from '@sigismund/sdk-core';
+import { Pair } from '@sigismund/v2-sdk/dist/entities';
+import { FeeAmount, Pool } from '@sigismund/v3-sdk';
 import JSBI from 'jsbi';
 import _ from 'lodash';
 

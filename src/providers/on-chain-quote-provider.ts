@@ -1,8 +1,8 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider } from '@ethersproject/providers';
-import { encodeMixedRouteToPath, MixedRouteSDK, Protocol, } from '@uniswap/router-sdk';
-import { ChainId } from '@uniswap/sdk-core';
-import { encodeRouteToPath } from '@uniswap/v3-sdk';
+import { encodeMixedRouteToPath, MixedRouteSDK, Protocol, } from '@sigismund/router-sdk';
+import { ChainId } from '@sigismund/sdk-core';
+import { encodeRouteToPath } from '@sigismund/v3-sdk';
 import retry, { Options as RetryOptions } from 'async-retry';
 import _ from 'lodash';
 import stats from 'stats-lite';

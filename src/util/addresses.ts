@@ -1,5 +1,5 @@
-import { CHAIN_TO_ADDRESSES_MAP, ChainId, Token } from '@uniswap/sdk-core';
-import { FACTORY_ADDRESS } from '@uniswap/v3-sdk';
+import { CHAIN_TO_ADDRESSES_MAP, ChainId, Token } from '@sigismund/sdk-core';
+import { FACTORY_ADDRESS } from '@sigismund/v3-sdk';
 
 import { NETWORKS_WITH_SAME_UNISWAP_ADDRESSES } from './chains';
 
@@ -20,6 +20,7 @@ export const V3_CORE_FACTORY_ADDRESSES: AddressMap = {
   [ChainId.AVALANCHE]: CHAIN_TO_ADDRESSES_MAP[ChainId.AVALANCHE].v3CoreFactoryAddress,
   [ChainId.BASE_GOERLI]: CHAIN_TO_ADDRESSES_MAP[ChainId.BASE_GOERLI].v3CoreFactoryAddress,
   [ChainId.BASE]: CHAIN_TO_ADDRESSES_MAP[ChainId.BASE].v3CoreFactoryAddress,
+  [ChainId.AIRDAO_TEST]: CHAIN_TO_ADDRESSES_MAP[ChainId.AIRDAO_TEST].v3CoreFactoryAddress,
   // TODO: Gnosis + Moonbeam contracts to be deployed
 };
 
@@ -34,6 +35,7 @@ export const QUOTER_V2_ADDRESSES: AddressMap = {
   [ChainId.AVALANCHE]: CHAIN_TO_ADDRESSES_MAP[ChainId.AVALANCHE].quoterAddress,
   [ChainId.BASE_GOERLI]: CHAIN_TO_ADDRESSES_MAP[ChainId.BASE_GOERLI].quoterAddress,
   [ChainId.BASE]: CHAIN_TO_ADDRESSES_MAP[ChainId.BASE].quoterAddress,
+  [ChainId.AIRDAO_TEST]: CHAIN_TO_ADDRESSES_MAP[ChainId.AIRDAO_TEST].quoterAddress,
   // TODO: Gnosis + Moonbeam contracts to be deployed
 };
 
@@ -53,12 +55,16 @@ export const UNISWAP_MULTICALL_ADDRESSES: AddressMap = {
   [ChainId.AVALANCHE]: CHAIN_TO_ADDRESSES_MAP[ChainId.AVALANCHE].multicallAddress,
   [ChainId.BASE_GOERLI]: CHAIN_TO_ADDRESSES_MAP[ChainId.BASE_GOERLI].multicallAddress,
   [ChainId.BASE]: CHAIN_TO_ADDRESSES_MAP[ChainId.BASE].multicallAddress,
+  [ChainId.AIRDAO_TEST]: CHAIN_TO_ADDRESSES_MAP[ChainId.AIRDAO_TEST].multicallAddress,
   // TODO: Gnosis + Moonbeam contracts to be deployed
 };
 
 export const SWAP_ROUTER_02_ADDRESSES = (chainId: number) : string => {
   if (chainId == ChainId.BNB) {
     return BNB_SWAP_ROUTER_02_ADDRESS;
+  }
+  if (chainId == ChainId.AIRDAO_TEST) {
+    return CHAIN_TO_ADDRESSES_MAP[ChainId.AIRDAO_TEST].swapRouter02Address!;
   }
   return '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45';
 };
@@ -162,5 +168,13 @@ export const WETH9: {
     18,
     'WETH',
     'Wrapped Ether'
-  )
+  ),
+  [ChainId.AIRDAO_TEST]: new Token(
+    ChainId.AIRDAO_TEST,
+    '0x2Cf845b49e1c4E5D657fbBF36E97B7B5B7B7b74b',
+    18,
+    'sAMB',
+    "Wrapped AMB",
+  ),
+
 };

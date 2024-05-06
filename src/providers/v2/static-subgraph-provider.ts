@@ -1,5 +1,5 @@
-import { ChainId, Token } from '@uniswap/sdk-core';
-import { Pair } from '@uniswap/v2-sdk';
+import { ChainId, Token } from '@sigismund/sdk-core';
+import { Pair } from '@sigismund/v2-sdk';
 import _ from 'lodash';
 
 import { WRAPPED_NATIVE_CURRENCY } from '../../util/chains';
@@ -41,7 +41,8 @@ const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
   [ChainId.BNB]: [],
   [ChainId.AVALANCHE]: [],
   [ChainId.BASE_GOERLI]: [],
-  [ChainId.BASE]: []
+  [ChainId.BASE]: [],
+  [ChainId.AIRDAO_TEST]: []
 };
 
 /**

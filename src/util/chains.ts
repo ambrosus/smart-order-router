@@ -1,4 +1,4 @@
-import { ChainId, Currency, Ether, NativeCurrency, Token } from '@uniswap/sdk-core';
+import { ChainId, Currency, Ether, NativeCurrency, Token } from '@sigismund/sdk-core';
 
 // WIP: Gnosis, Moonbeam
 export const SUPPORTED_CHAINS: ChainId[] = [
@@ -16,6 +16,7 @@ export const SUPPORTED_CHAINS: ChainId[] = [
   ChainId.BNB,
   ChainId.AVALANCHE,
   ChainId.BASE,
+  ChainId.AIRDAO_TEST,
   // Gnosis and Moonbeam don't yet have contracts deployed yet
 ];
 
@@ -79,6 +80,8 @@ export const ID_TO_CHAIN_ID = (id: number): ChainId => {
       return ChainId.BASE;
     case 84531:
       return ChainId.BASE_GOERLI;
+    case 22040:
+      return ChainId.AIRDAO_TEST;
     default:
       throw new Error(`Unknown chain id: ${id}`);
   }
@@ -102,6 +105,7 @@ export enum ChainName {
   AVALANCHE = 'avalanche-mainnet',
   BASE = 'base-mainnet',
   BASE_GOERLI = 'base-goerli',
+  AIRDAO_TEST = 'airdao-test',
 }
 
 
@@ -114,6 +118,7 @@ export enum NativeCurrencyName {
   MOONBEAM = 'GLMR',
   BNB = 'BNB',
   AVALANCHE = 'AVAX',
+  AMBER = 'AMB',
 }
 
 export const NATIVE_NAMES_BY_ID: { [chainId: number]: string[] } = {
@@ -177,7 +182,12 @@ export const NATIVE_NAMES_BY_ID: { [chainId: number]: string[] } = {
     'ETH',
     'ETHER',
     '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
-  ]
+  ],
+  [ChainId.AIRDAO_TEST]: [
+    'AMB',
+    'AMBER',
+    '0x0000000000000000000000000000000000000000',
+  ],
 };
 
 export const NATIVE_CURRENCY: { [chainId: number]: NativeCurrencyName } = {
@@ -197,6 +207,7 @@ export const NATIVE_CURRENCY: { [chainId: number]: NativeCurrencyName } = {
   [ChainId.BNB]: NativeCurrencyName.BNB,
   [ChainId.AVALANCHE]: NativeCurrencyName.AVALANCHE,
   [ChainId.BASE]: NativeCurrencyName.ETHER,
+  [ChainId.AIRDAO_TEST]: NativeCurrencyName.AMBER,
 };
 
 export const ID_TO_NETWORK_NAME = (id: number): ChainName => {
@@ -235,6 +246,8 @@ export const ID_TO_NETWORK_NAME = (id: number): ChainName => {
       return ChainName.BASE;
     case 84531:
       return ChainName.BASE_GOERLI;
+    case 22040:
+      return ChainName.AIRDAO_TEST;
     default:
       throw new Error(`Unknown chain id: ${id}`);
   }
@@ -274,6 +287,8 @@ export const ID_TO_PROVIDER = (id: ChainId): string => {
       return process.env.JSON_RPC_PROVIDER_AVALANCHE!;
     case ChainId.BASE:
       return process.env.JSON_RPC_PROVIDER_BASE!;
+    case ChainId.AIRDAO_TEST:
+      return process.env.JSON_RPC_PROVIDER_AIRDAO_TEST!;
     default:
       throw new Error(`Chain id: ${id} not supported`);
   }
@@ -400,7 +415,14 @@ export const WRAPPED_NATIVE_CURRENCY: { [chainId in ChainId]: Token } = {
     18,
     'WETH',
     'Wrapped Ether'
-  )
+  ),
+  [ChainId.AIRDAO_TEST]: new Token(
+    ChainId.AIRDAO_TEST,
+    '0x2Cf845b49e1c4E5D657fbBF36E97B7B5B7B7b74b',
+    18,
+    'sAMB',
+    'Wrapped Amber'
+  ),
 };
 
 function isMatic(

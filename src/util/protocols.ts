@@ -1,4 +1,4 @@
-import { Protocol } from '@uniswap/router-sdk';
+import { Protocol } from '@sigismund/router-sdk';
 
 export const TO_PROTOCOL = (protocol: string): Protocol => {
   switch (protocol.toLowerCase()) {
