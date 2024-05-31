@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@sigismund/router-sdk';
-import { ChainId, Currency, Token, TradeType } from '@sigismund/sdk-core';
+import { Protocol } from '@airdao/router-sdk';
+import { ChainId, Currency, Token, TradeType } from '@airdao/sdk-core';
 import _ from 'lodash';
 
 import {

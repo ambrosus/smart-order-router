@@ -1,6 +1,6 @@
 import { ID_TO_PROVIDER } from '../../../src';
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { ChainId, WETH9 } from '@sigismund/sdk-core';
+import { ChainId, WETH9 } from '@airdao/sdk-core';
 import {
   ITokenFeeFetcher,
   OnChainTokenFeeFetcher

@@ -1,6 +1,6 @@
-import { Protocol } from '@sigismund/router-sdk';
-import { Token } from '@sigismund/sdk-core';
-import { Pool } from '@sigismund/v3-sdk';
+import { Protocol } from '@airdao/router-sdk';
+import { Token } from '@airdao/sdk-core';
+import { Pool } from '@airdao/v3-sdk';
 
 import { MixedRoute, V2Route, V3Route } from '../../../../routers';
 

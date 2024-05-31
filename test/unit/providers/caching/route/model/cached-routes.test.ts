@@ -1,5 +1,5 @@
-import { Protocol } from '@sigismund/router-sdk';
-import { ChainId, TradeType } from '@sigismund/sdk-core';
+import { Protocol } from '@airdao/router-sdk';
+import { ChainId, TradeType } from '@airdao/sdk-core';
 import { V3RouteWithValidQuote } from '../../../../../../build/main';
 import { CachedRoutes, DAI_MAINNET as DAI, USDC_MAINNET as USDC } from '../../../../../../src';
 import { getV3RouteWithValidQuoteStub } from '../test-util/mocked-dependencies';

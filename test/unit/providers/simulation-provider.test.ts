@@ -1,6 +1,6 @@
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { Trade } from '@sigismund/router-sdk';
-import { ChainId, Percent, TradeType } from '@sigismund/sdk-core';
+import { Trade } from '@airdao/router-sdk';
+import { ChainId, Percent, TradeType } from '@airdao/sdk-core';
 import { BigNumber } from 'ethers';
 import sinon from 'sinon';
 import {

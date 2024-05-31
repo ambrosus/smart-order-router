@@ -1,4 +1,4 @@
-import { Protocol } from '@sigismund/router-sdk';
+import { Protocol } from '@airdao/router-sdk';
 
 export const TO_PROTOCOL = (protocol: string): Protocol => {
   switch (protocol.toLowerCase()) {

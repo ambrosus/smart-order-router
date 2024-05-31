@@ -1,4 +1,4 @@
-import { ChainId, Currency, Ether, NativeCurrency, Token } from '@sigismund/sdk-core';
+import { ChainId, Currency, Ether, NativeCurrency, Token } from '@airdao/sdk-core';
 
 // WIP: Gnosis, Moonbeam
 export const SUPPORTED_CHAINS: ChainId[] = [

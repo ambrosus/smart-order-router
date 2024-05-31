@@ -1,5 +1,5 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Currency, Token } from '@sigismund/sdk-core';
+import { ChainId, Currency, Token } from '@airdao/sdk-core';
 
 import { AAVE_MAINNET, LIDO_MAINNET } from '../../../../providers';
 import { V3Route } from '../../../router';

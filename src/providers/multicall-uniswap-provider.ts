@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider } from '@ethersproject/providers';
-import { ChainId } from '@sigismund/sdk-core';
+import { ChainId } from '@airdao/sdk-core';
 import _ from 'lodash';
 import stats from 'stats-lite';
 

@@ -4,7 +4,7 @@
 
 import { JsonRpcProvider, JsonRpcSigner } from '@ethersproject/providers';
 import { AllowanceTransfer, PermitSingle } from '@uniswap/permit2-sdk';
-import { Protocol } from '@sigismund/router-sdk';
+import { Protocol } from '@airdao/router-sdk';
 import {
   ChainId,
   Currency,
@@ -15,14 +15,14 @@ import {
   Rounding,
   Token,
   TradeType
-} from '@sigismund/sdk-core';
+} from '@airdao/sdk-core';
 import {
   PERMIT2_ADDRESS,
   UNIVERSAL_ROUTER_ADDRESS as UNIVERSAL_ROUTER_ADDRESS_BY_CHAIN
-} from '@sigismund/universal-router-sdk';
-import { Permit2Permit } from '@sigismund/universal-router-sdk/dist/utils/inputTokens';
-import { Pair } from '@sigismund/v2-sdk';
-import { encodeSqrtRatioX96, FeeAmount, Pool } from '@sigismund/v3-sdk';
+} from '@airdao/universal-router-sdk';
+import { Permit2Permit } from '@airdao/universal-router-sdk/dist/utils/inputTokens';
+import { Pair } from '@airdao/v2-sdk';
+import { encodeSqrtRatioX96, FeeAmount, Pool } from '@airdao/v3-sdk';
 import bunyan from 'bunyan';
 import { BigNumber, providers, Wallet } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';

@@ -1,4 +1,4 @@
-import { ChainId, Token } from '@sigismund/sdk-core';
+import { ChainId, Token } from '@airdao/sdk-core';
 import _ from 'lodash';
 
 import { ITokenValidator__factory } from '../types/other/factories/ITokenValidator__factory';

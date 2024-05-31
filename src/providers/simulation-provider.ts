@@ -1,6 +1,6 @@
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { ChainId, TradeType } from '@sigismund/sdk-core';
-import { PERMIT2_ADDRESS } from '@sigismund/universal-router-sdk';
+import { ChainId, TradeType } from '@airdao/sdk-core';
+import { PERMIT2_ADDRESS } from '@airdao/universal-router-sdk';
 import { BigNumber } from 'ethers/lib/ethers';
 
 import { SwapOptions, SwapRoute, SwapType } from '../routers';

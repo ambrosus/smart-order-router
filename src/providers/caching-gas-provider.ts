@@ -1,4 +1,4 @@
-import { ChainId } from '@sigismund/sdk-core';
+import { ChainId } from '@airdao/sdk-core';
 
 import { log } from '../util/log';
 

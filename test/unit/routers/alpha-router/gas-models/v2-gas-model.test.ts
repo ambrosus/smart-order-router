@@ -1,4 +1,4 @@
-import { Currency, Ether } from '@sigismund/sdk-core';
+import { Currency, Ether } from '@airdao/sdk-core';
 import { BigNumber } from 'ethers';
 import { DAI_MAINNET, V2Route } from '../../../../../src';
 import {

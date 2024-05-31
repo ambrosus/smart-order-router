@@ -1,8 +1,8 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { partitionMixedRouteByProtocol } from '@sigismund/router-sdk';
-import { ChainId } from '@sigismund/sdk-core';
-import { Pair } from '@sigismund/v2-sdk';
-import { Pool } from '@sigismund/v3-sdk';
+import { partitionMixedRouteByProtocol } from '@airdao/router-sdk';
+import { ChainId } from '@airdao/sdk-core';
+import { Pair } from '@airdao/v2-sdk';
+import { Pool } from '@airdao/v3-sdk';
 import JSBI from 'jsbi';
 import _ from 'lodash';
 

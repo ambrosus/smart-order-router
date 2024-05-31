@@ -1,5 +1,5 @@
-import { Pair } from '@sigismund/v2-sdk';
-import { encodeSqrtRatioX96, FeeAmount, Pool } from '@sigismund/v3-sdk';
+import { Pair } from '@airdao/v2-sdk';
+import { encodeSqrtRatioX96, FeeAmount, Pool } from '@airdao/v3-sdk';
 import {
   CurrencyAmount,
   DAI_MAINNET as DAI,

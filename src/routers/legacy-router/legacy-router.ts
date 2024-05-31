@@ -1,8 +1,8 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { Logger } from '@ethersproject/logger';
-import { SwapRouter, Trade } from '@sigismund/router-sdk';
-import { ChainId, Currency, Token, TradeType } from '@sigismund/sdk-core';
-import { FeeAmount, MethodParameters, Pool, Route } from '@sigismund/v3-sdk';
+import { SwapRouter, Trade } from '@airdao/router-sdk';
+import { ChainId, Currency, Token, TradeType } from '@airdao/sdk-core';
+import { FeeAmount, MethodParameters, Pool, Route } from '@airdao/v3-sdk';
 import _ from 'lodash';
 
 import { IOnChainQuoteProvider, RouteWithQuotes } from '../../providers';

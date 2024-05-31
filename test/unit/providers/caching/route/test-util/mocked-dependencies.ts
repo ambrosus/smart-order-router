@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@sigismund/router-sdk';
-import { ChainId, TradeType } from '@sigismund/sdk-core';
+import { Protocol } from '@airdao/router-sdk';
+import { ChainId, TradeType } from '@airdao/sdk-core';
 import {
   DAI_MAINNET,
   USDC_MAINNET,

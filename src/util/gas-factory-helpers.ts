@@ -1,14 +1,14 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@sigismund/router-sdk';
+import { Protocol } from '@airdao/router-sdk';
 import {
   ChainId,
   Currency,
   CurrencyAmount,
   Token,
   TradeType,
-} from '@sigismund/sdk-core';
-import { Pair } from '@sigismund/v2-sdk/dist/entities';
-import { FeeAmount, Pool } from '@sigismund/v3-sdk';
+} from '@airdao/sdk-core';
+import { Pair } from '@airdao/v2-sdk/dist/entities';
+import { FeeAmount, Pool } from '@airdao/v3-sdk';
 import JSBI from 'jsbi';
 import _ from 'lodash';
 

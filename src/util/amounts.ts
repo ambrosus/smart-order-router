@@ -2,8 +2,8 @@ import { parseUnits } from '@ethersproject/units';
 import {
   Currency,
   CurrencyAmount as CurrencyAmountRaw,
-} from '@sigismund/sdk-core';
-import { FeeAmount } from '@sigismund/v3-sdk';
+} from '@airdao/sdk-core';
+import { FeeAmount } from '@airdao/v3-sdk';
 import JSBI from 'jsbi';
 
 export class CurrencyAmount extends CurrencyAmountRaw<Currency> {}

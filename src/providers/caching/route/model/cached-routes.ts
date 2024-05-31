@@ -1,5 +1,5 @@
-import { Protocol } from '@sigismund/router-sdk';
-import { ChainId, Token, TradeType } from '@sigismund/sdk-core';
+import { Protocol } from '@airdao/router-sdk';
+import { ChainId, Token, TradeType } from '@airdao/sdk-core';
 import _ from 'lodash';
 
 import { MixedRoute, RouteWithValidQuote, V2Route, V3Route } from '../../../../routers';

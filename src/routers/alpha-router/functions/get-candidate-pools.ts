@@ -1,6 +1,6 @@
-import { Protocol } from '@sigismund/router-sdk';
-import { ChainId, Token, TradeType } from '@sigismund/sdk-core';
-import { FeeAmount } from '@sigismund/v3-sdk';
+import { Protocol } from '@airdao/router-sdk';
+import { ChainId, Token, TradeType } from '@airdao/sdk-core';
+import { FeeAmount } from '@airdao/v3-sdk';
 import _ from 'lodash';
 
 import { ITokenListProvider, IV2SubgraphProvider, V2SubgraphPool, } from '../../../providers';

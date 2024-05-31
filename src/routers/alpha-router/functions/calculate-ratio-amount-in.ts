@@ -1,4 +1,4 @@
-import { Fraction } from '@sigismund/sdk-core';
+import { Fraction } from '@airdao/sdk-core';
 
 import { CurrencyAmount } from '../../../util/amounts';
 

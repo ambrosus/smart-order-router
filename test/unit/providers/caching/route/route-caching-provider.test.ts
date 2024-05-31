@@ -1,5 +1,5 @@
-import { Protocol } from '@sigismund/router-sdk';
-import { CurrencyAmount, TradeType } from '@sigismund/sdk-core';
+import { Protocol } from '@airdao/router-sdk';
+import { CurrencyAmount, TradeType } from '@airdao/sdk-core';
 import { DAI_MAINNET as DAI, USDC_MAINNET as USDC, WBTC_MAINNET as WBTC } from '../../../../../build/main';
 import { CachedRoutes, CacheMode } from '../../../../../src';
 import { InMemoryRouteCachingProvider } from './test-util/inmemory-route-caching-provider';

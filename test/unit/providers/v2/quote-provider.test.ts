@@ -1,5 +1,5 @@
-import { ChainId, CurrencyAmount, Fraction, Token } from '@sigismund/sdk-core';
-import { Pair } from '@sigismund/v2-sdk';
+import { ChainId, CurrencyAmount, Fraction, Token } from '@airdao/sdk-core';
+import { Pair } from '@airdao/v2-sdk';
 import { BigNumber } from 'ethers';
 import JSBI from 'jsbi';
 import { V2QuoteProvider, V2Route, WETH9 } from '../../../../src';

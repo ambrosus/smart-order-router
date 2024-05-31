@@ -1,10 +1,10 @@
 import { MaxUint256 } from '@ethersproject/constants';
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { ChainId } from '@sigismund/sdk-core';
+import { ChainId } from '@airdao/sdk-core';
 import {
   PERMIT2_ADDRESS,
   UNIVERSAL_ROUTER_ADDRESS,
-} from '@sigismund/universal-router-sdk';
+} from '@airdao/universal-router-sdk';
 import axios, { AxiosRequestConfig } from 'axios';
 import { BigNumber } from 'ethers/lib/ethers';
 

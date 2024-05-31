@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ChainId, Token } from '@sigismund/sdk-core';
+import { ChainId, Token } from '@airdao/sdk-core';
 
 import {
   BTC_BNB,

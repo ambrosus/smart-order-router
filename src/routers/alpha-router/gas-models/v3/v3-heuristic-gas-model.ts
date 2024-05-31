@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Percent, Price, TradeType } from '@sigismund/sdk-core';
-import { Pool } from '@sigismund/v3-sdk';
+import { ChainId, Percent, Price, TradeType } from '@airdao/sdk-core';
+import { Pool } from '@airdao/v3-sdk';
 import _ from 'lodash';
 
 import {

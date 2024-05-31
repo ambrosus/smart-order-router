@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { TradeType } from '@sigismund/sdk-core';
-import { InsufficientInputAmountError, InsufficientReservesError } from '@sigismund/v2-sdk';
+import { TradeType } from '@airdao/sdk-core';
+import { InsufficientInputAmountError, InsufficientReservesError } from '@airdao/v2-sdk';
 
 import { V2Route } from '../../routers/router';
 import { CurrencyAmount } from '../../util/amounts';

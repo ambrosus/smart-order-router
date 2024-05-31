@@ -4,22 +4,22 @@ import {
   MixedRouteSDK,
   Protocol,
   Trade,
-} from '@sigismund/router-sdk';
+} from '@airdao/router-sdk';
 import {
   Currency,
   Fraction,
   Percent,
   Token,
   TradeType,
-} from '@sigismund/sdk-core';
-import { SwapOptions as UniversalRouterSwapOptions } from '@sigismund/universal-router-sdk';
-import { Route as V2RouteRaw } from '@sigismund/v2-sdk';
+} from '@airdao/sdk-core';
+import { SwapOptions as UniversalRouterSwapOptions } from '@airdao/universal-router-sdk';
+import { Route as V2RouteRaw } from '@airdao/v2-sdk';
 import {
   Pool,
   Position,
   MethodParameters as SDKMethodParameters,
   Route as V3RouteRaw,
-} from '@sigismund/v3-sdk';
+} from '@airdao/v3-sdk';
 
 import { SimulationStatus } from '../providers';
 import { CurrencyAmount } from '../util/amounts';

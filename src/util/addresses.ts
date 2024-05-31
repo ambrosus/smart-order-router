@@ -1,5 +1,5 @@
-import { CHAIN_TO_ADDRESSES_MAP, ChainId, Token } from '@sigismund/sdk-core';
-import { FACTORY_ADDRESS } from '@sigismund/v3-sdk';
+import { CHAIN_TO_ADDRESSES_MAP, ChainId, Token } from '@airdao/sdk-core';
+import { FACTORY_ADDRESS } from '@airdao/v3-sdk';
 
 import { NETWORKS_WITH_SAME_UNISWAP_ADDRESSES } from './chains';
 

@@ -1,4 +1,4 @@
-import { ChainId } from '@sigismund/sdk-core';
+import { ChainId } from '@airdao/sdk-core';
 
 import { EIP1559GasPriceProvider } from './eip-1559-gas-price-provider';
 import { GasPrice, IGasPriceProvider } from './gas-price-provider';

@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { ZERO } from '@sigismund/router-sdk';
-import { Fraction, TradeType } from '@sigismund/sdk-core';
+import { ZERO } from '@airdao/router-sdk';
+import { Fraction, TradeType } from '@airdao/sdk-core';
 
 import {
   RouteWithValidQuote,

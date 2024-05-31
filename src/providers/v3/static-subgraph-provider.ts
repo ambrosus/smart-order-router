@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ChainId, Token } from '@sigismund/sdk-core';
-import { FeeAmount, Pool } from '@sigismund/v3-sdk';
+import { ChainId, Token } from '@airdao/sdk-core';
+import { FeeAmount, Pool } from '@airdao/v3-sdk';
 import JSBI from 'jsbi';
 import _ from 'lodash';
 

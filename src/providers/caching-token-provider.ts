@@ -1,4 +1,4 @@
-import { ChainId, Token } from '@sigismund/sdk-core';
+import { ChainId, Token } from '@airdao/sdk-core';
 import _ from 'lodash';
 
 import { log, WRAPPED_NATIVE_CURRENCY } from '../util';

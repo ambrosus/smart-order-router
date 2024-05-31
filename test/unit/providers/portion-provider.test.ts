@@ -6,7 +6,7 @@ import {
   Percent,
   Token,
   TradeType,
-} from '@sigismund/sdk-core';
+} from '@airdao/sdk-core';
 import { parseAmount, RouteWithValidQuote, SwapOptions, SwapType, V2RouteWithValidQuote, V3RouteWithValidQuote } from '../../../src';
 import { PortionProvider } from '../../../src/providers/portion-provider';
 import { FLAT_PORTION, GREENLIST_TOKEN_PAIRS } from '../../test-util/mock-data';

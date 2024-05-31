@@ -1,5 +1,5 @@
-import { ChainId, Token } from '@sigismund/sdk-core';
-import { Pair } from '@sigismund/v2-sdk';
+import { ChainId, Token } from '@airdao/sdk-core';
+import { Pair } from '@airdao/v2-sdk';
 import _ from 'lodash';
 
 import { log } from '../../util/log';

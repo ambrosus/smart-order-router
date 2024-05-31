@@ -1,8 +1,8 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers';
-import { Protocol, SwapRouter, Trade, ZERO } from '@sigismund/router-sdk';
-import { ChainId, Currency, Fraction, Token, TradeType } from '@sigismund/sdk-core';
-import { Pool, Position, SqrtPriceMath, TickMath } from '@sigismund/v3-sdk';
+import { Protocol, SwapRouter, Trade, ZERO } from '@airdao/router-sdk';
+import { ChainId, Currency, Fraction, Token, TradeType } from '@airdao/sdk-core';
+import { Pool, Position, SqrtPriceMath, TickMath } from '@airdao/v3-sdk';
 import DEFAULT_TOKEN_LIST from '@uniswap/default-token-list';
 import { TokenList } from '@uniswap/token-lists';
 import retry from 'async-retry';

@@ -1,7 +1,7 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@sigismund/router-sdk';
-import { Token, TradeType } from '@sigismund/sdk-core';
-import { Pool } from '@sigismund/v3-sdk';
+import { Protocol } from '@airdao/router-sdk';
+import { Token, TradeType } from '@airdao/sdk-core';
+import { Pool } from '@airdao/v3-sdk';
 import _ from 'lodash';
 
 import { IV2PoolProvider } from '../../../providers/v2/pool-provider';

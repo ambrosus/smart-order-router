@@ -3,14 +3,14 @@ import {
   Protocol,
   SwapRouter as SwapRouter02,
   Trade,
-} from '@sigismund/router-sdk';
-import { ChainId, Currency, TradeType } from '@sigismund/sdk-core';
+} from '@airdao/router-sdk';
+import { ChainId, Currency, TradeType } from '@airdao/sdk-core';
 import {
   SwapRouter as UniveralRouter,
   UNIVERSAL_ROUTER_ADDRESS,
-} from '@sigismund/universal-router-sdk';
-import { Route as V2RouteRaw } from '@sigismund/v2-sdk';
-import { Route as V3RouteRaw } from '@sigismund/v3-sdk';
+} from '@airdao/universal-router-sdk';
+import { Route as V2RouteRaw } from '@airdao/v2-sdk';
+import { Route as V3RouteRaw } from '@airdao/v3-sdk';
 import _ from 'lodash';
 
 import {

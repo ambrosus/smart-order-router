@@ -1,5 +1,5 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Token } from '@sigismund/sdk-core';
+import { ChainId, Token } from '@airdao/sdk-core';
 
 import { log, metric, MetricLoggerUnit } from '../util';
 

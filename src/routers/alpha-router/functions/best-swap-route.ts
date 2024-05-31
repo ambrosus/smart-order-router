@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@sigismund/router-sdk';
-import { ChainId, TradeType } from '@sigismund/sdk-core';
+import { Protocol } from '@airdao/router-sdk';
+import { ChainId, TradeType } from '@airdao/sdk-core';
 import JSBI from 'jsbi';
 import _ from 'lodash';
 import FixedReverseHeap from 'mnemonist/fixed-reverse-heap';
