@@ -24,6 +24,7 @@ export const V2_SUPPORTED = [
   ChainId.MAINNET,
   ChainId.GOERLI,
   ChainId.SEPOLIA,
+  ChainId.AIRDAO_TEST,
 ];
 
 export const HAS_L1_FEE = [
