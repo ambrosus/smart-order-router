@@ -1,5 +1,5 @@
-import { ApprovalTypes } from '@airdao/router-sdk';
-import { ChainId, Currency, CurrencyAmount } from '@airdao/sdk-core';
+import { ApprovalTypes } from '@airdao/astra-router-sdk';
+import { ChainId, Currency, CurrencyAmount } from '@airdao/astra-sdk-core';
 
 import { SwapRouter02__factory } from '../types/other/factories/SwapRouter02__factory';
 import { log, SWAP_ROUTER_02_ADDRESSES } from '../util';

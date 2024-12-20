@@ -1,7 +1,7 @@
-import { partitionMixedRouteByProtocol } from '@airdao/router-sdk';
-import { Currency, CurrencyAmount, Ether, Token } from '@airdao/sdk-core';
-import { Pair } from '@airdao/v2-sdk';
-import { Pool } from '@airdao/v3-sdk';
+import { partitionMixedRouteByProtocol } from '@airdao/astra-router-sdk';
+import { Currency, CurrencyAmount, Ether, Token } from '@airdao/astra-sdk-core';
+import { Pair } from '@airdao/astra-classic-sdk';
+import { Pool } from '@airdao/astra-cl-sdk';
 import { BigNumber } from 'ethers';
 import _ from 'lodash';
 import {

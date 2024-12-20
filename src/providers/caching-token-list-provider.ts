@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { ChainId, Token } from '@airdao/sdk-core';
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import { TokenInfo, TokenList } from '@uniswap/token-lists';
 import axios from 'axios';
 
@@ -188,10 +188,10 @@ export class CachingTokenListProvider
   public async getTokenBySymbol(_symbol: string): Promise<Token | undefined> {
     let symbol = _symbol;
 
-    // We consider ETH as a regular ERC20 Token throughout this package. We don't use the NativeCurrency object from the sdk.
+    // We consider AMB as a regular ERC20 Token throughout this package. We don't use the NativeCurrency object from the sdk.
     // When we build the calldata for swapping we insert wrapping/unwrapping as needed.
-    if (_symbol == 'ETH') {
-      symbol = 'WETH';
+    if (_symbol == 'AMB') {
+      symbol = 'SAMB';
     }
 
     const tokenInfo = this.chainSymbolToTokenInfo.get(this.CHAIN_SYMBOL_KEY(this.chainId, symbol));

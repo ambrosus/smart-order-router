@@ -1,23 +1,30 @@
+import { encodeRouteToPath } from '@airdao/astra-cl-sdk';
+import {
+  encodeMixedRouteToPath,
+  MixedRouteSDK,
+  Protocol,
+} from '@airdao/astra-router-sdk';
+import { ChainId } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider } from '@ethersproject/providers';
-import { encodeMixedRouteToPath, MixedRouteSDK, Protocol, } from '@airdao/router-sdk';
-import { ChainId } from '@airdao/sdk-core';
-import { encodeRouteToPath } from '@airdao/v3-sdk';
 import retry, { Options as RetryOptions } from 'async-retry';
 import _ from 'lodash';
 import stats from 'stats-lite';
 
-import { MixedRoute, V2Route, V3Route } from '../routers/router';
-import { IMixedRouteQuoterV1__factory } from '../types/other/factories/IMixedRouteQuoterV1__factory';
-import { IQuoterV2__factory } from '../types/v3/factories/IQuoterV2__factory';
+import { ClassicRoute, CLRoute, MixedRoute } from '../routers/router';
+import { IQuoterV2__factory } from '../types/cl';
+import { IMixedRouteQuoterV1__factory } from '../types/other';
 import { ID_TO_NETWORK_NAME, metric, MetricLoggerUnit } from '../util';
-import { MIXED_ROUTE_QUOTER_V1_ADDRESSES, QUOTER_V2_ADDRESSES, } from '../util/addresses';
+import {
+  MIXED_ROUTE_QUOTER_V1_ADDRESSES,
+  QUOTER_V2_ADDRESSES,
+} from '../util/addresses';
 import { CurrencyAmount } from '../util/amounts';
 import { log } from '../util/log';
 import { routeToString } from '../util/routes';
 
+import { AstraMulticallProvider } from './multicall-astra-provider';
 import { Result } from './multicall-provider';
-import { UniswapMulticallProvider } from './multicall-uniswap-provider';
 import { ProviderConfig } from './provider';
 
 /**
@@ -78,12 +85,11 @@ export class ProviderGasError extends Error {
 export type QuoteRetryOptions = RetryOptions;
 
 /**
- * The V3 route and a list of quotes for that route.
+ * The CL route and a list of quotes for that route.
  */
-export type RouteWithQuotes<TRoute extends V3Route | V2Route | MixedRoute> = [
-  TRoute,
-  AmountQuote[]
-];
+export type RouteWithQuotes<
+  TRoute extends CLRoute | ClassicRoute | MixedRoute
+> = [TRoute, AmountQuote[]];
 
 type QuoteBatchSuccess = {
   status: 'success';
@@ -114,7 +120,7 @@ type QuoteBatchPending = {
 type QuoteBatchState = QuoteBatchSuccess | QuoteBatchFailed | QuoteBatchPending;
 
 /**
- * Provider for getting on chain quotes using routes containing V3 pools or V2 pools.
+ * Provider for getting on chain quotes using routes containing CL pools or Classic pools.
  *
  * @export
  * @interface IOnChainQuoteProvider
@@ -122,7 +128,7 @@ type QuoteBatchState = QuoteBatchSuccess | QuoteBatchFailed | QuoteBatchPending;
 export interface IOnChainQuoteProvider {
   /**
    * For every route, gets an exactIn quotes for every amount provided.
-   * @notice While passing in exactIn V2Routes is supported, we recommend using the V2QuoteProvider to compute off chain quotes for V2 whenever possible
+   * @notice While passing in exactIn ClassicRoutes is supported, we recommend using the V2QuoteProvider to compute off chain quotes for Classic whenever possible
    *
    * @param amountIns The amounts to get quotes for.
    * @param routes The routes to get quotes for.
@@ -130,7 +136,7 @@ export interface IOnChainQuoteProvider {
    * @returns For each route returns a RouteWithQuotes object that contains all the quotes.
    * @returns The blockNumber used when generating the quotes.
    */
-  getQuotesManyExactIn<TRoute extends V3Route | V2Route | MixedRoute>(
+  getQuotesManyExactIn<TRoute extends CLRoute | ClassicRoute | MixedRoute>(
     amountIns: CurrencyAmount[],
     routes: TRoute[],
     providerConfig?: ProviderConfig
@@ -141,7 +147,7 @@ export interface IOnChainQuoteProvider {
 
   /**
    * For every route, gets ane exactOut quote for every amount provided.
-   * @notice This does not support quotes for MixedRoutes (routes with both V3 and V2 pools/pairs) or pure V2 routes
+   * @notice This does not support quotes for MixedRoutes (routes with both CL and Classic pools/pairs) or pure Classic routes
    *
    * @param amountOuts The amounts to get quotes for.
    * @param routes The routes to get quotes for.
@@ -149,7 +155,7 @@ export interface IOnChainQuoteProvider {
    * @returns For each route returns a RouteWithQuotes object that contains all the quotes.
    * @returns The blockNumber used when generating the quotes.
    */
-  getQuotesManyExactOut<TRoute extends V3Route>(
+  getQuotesManyExactOut<TRoute extends CLRoute>(
     amountOuts: CurrencyAmount[],
     routes: TRoute[],
     providerConfig?: ProviderConfig
@@ -221,8 +227,8 @@ export type BlockNumberConfig = {
 const DEFAULT_BATCH_RETRIES = 2;
 
 /**
- * Computes on chain quotes for swaps. For pure V3 routes, quotes are computed on-chain using
- * the 'QuoterV2' smart contract. For exactIn mixed and V2 routes, quotes are computed using the 'MixedRouteQuoterV1' contract
+ * Computes on chain quotes for swaps. For pure CL routes, quotes are computed on-chain using
+ * the 'QuoterV2' smart contract. For exactIn mixed and Classic routes, quotes are computed using the 'MixedRouteQuoterV1' contract
  * This is because computing quotes off-chain would require fetching all the tick data for each pool, which is a lot of data.
  *
  * To minimize the number of requests for quotes we use a Multicall contract. Generally
@@ -232,7 +238,7 @@ const DEFAULT_BATCH_RETRIES = 2;
  * The biggest challenge with the quote provider is dealing with various gas limits.
  * Each provider sets a limit on the amount of gas a call can consume (on Infura this
  * is approximately 10x the block max size), so we must ensure each multicall does not
- * exceed this limit. Additionally, each quote on V3 can consume a large number of gas if
+ * exceed this limit. Additionally, each quote on CL can consume a large number of gas if
  * the pool lacks liquidity and the swap would cause all the ticks to be traversed.
  *
  * To ensure we don't exceed the node's call limit, we limit the gas used by each quote to
@@ -262,7 +268,7 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
     protected chainId: ChainId,
     protected provider: BaseProvider,
     // Only supports Uniswap Multicall as it needs the gas limitting functionality.
-    protected multicall2Provider: UniswapMulticallProvider,
+    protected multicall2Provider: AstraMulticallProvider,
     protected retryOptions: QuoteRetryOptions = {
       retries: DEFAULT_BATCH_RETRIES,
       minTimeout: 25,
@@ -286,8 +292,7 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
       rollback: { enabled: false },
     },
     protected quoterAddressOverride?: string
-  ) {
-  }
+  ) {}
 
   private getQuoterAddress(useMixedRouteQuoter: boolean): string {
     if (this.quoterAddressOverride) {
@@ -306,7 +311,7 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
   }
 
   public async getQuotesManyExactIn<
-    TRoute extends V3Route | V2Route | MixedRoute
+    TRoute extends CLRoute | ClassicRoute | MixedRoute
   >(
     amountIns: CurrencyAmount[],
     routes: TRoute[],
@@ -323,7 +328,7 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
     );
   }
 
-  public async getQuotesManyExactOut<TRoute extends V3Route>(
+  public async getQuotesManyExactOut<TRoute extends CLRoute>(
     amountOuts: CurrencyAmount[],
     routes: TRoute[],
     providerConfig?: ProviderConfig
@@ -340,7 +345,7 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
   }
 
   private async getQuotesManyData<
-    TRoute extends V3Route | V2Route | MixedRoute
+    TRoute extends CLRoute | ClassicRoute | MixedRoute
   >(
     amounts: CurrencyAmount[],
     routes: TRoute[],
@@ -351,7 +356,7 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
     blockNumber: BigNumber;
   }> {
     const useMixedRouteQuoter =
-      routes.some((route) => route.protocol === Protocol.V2) ||
+      routes.some((route) => route.protocol === Protocol.Classic) ||
       routes.some((route) => route.protocol === Protocol.MIXED);
 
     /// Validate that there are no incorrect routes / function combinations
@@ -372,16 +377,16 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
     const inputs: [string, string][] = _(routes)
       .flatMap((route) => {
         const encodedRoute =
-          route.protocol === Protocol.V3
+          route.protocol === Protocol.CL
             ? encodeRouteToPath(
-              route,
-              functionName == 'quoteExactOutput' // For exactOut must be true to ensure the routes are reversed.
-            )
+                route,
+                functionName == 'quoteExactOutput' // For exactOut must be true to ensure the routes are reversed.
+              )
             : encodeMixedRouteToPath(
-              route instanceof V2Route
-                ? new MixedRouteSDK(route.pairs, route.input, route.output)
-                : route
-            );
+                route instanceof ClassicRoute
+                  ? new MixedRouteSDK(route.pairs, route.input, route.output)
+                  : route
+              );
         const routeInputs: [string, string][] = amounts.map((amount) => [
           encodedRoute,
           `0x${amount.quotient.toString(16)}`,
@@ -415,7 +420,11 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
     );
 
     metric.putMetric('QuoteBatchSize', inputs.length, MetricLoggerUnit.Count);
-    metric.putMetric(`QuoteBatchSize_${ID_TO_NETWORK_NAME(this.chainId)}`, inputs.length, MetricLoggerUnit.Count);
+    metric.putMetric(
+      `QuoteBatchSize_${ID_TO_NETWORK_NAME(this.chainId)}`,
+      inputs.length,
+      MetricLoggerUnit.Count
+    );
 
     let haveRetriedForSuccessRate = false;
     let haveRetriedForBlockHeader = false;
@@ -625,7 +634,7 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
                   providerConfig.blockNumber = providerConfig.blockNumber
                     ? (await providerConfig.blockNumber) + rollbackBlockOffset
                     : (await this.provider.getBlockNumber()) +
-                    rollbackBlockOffset;
+                      rollbackBlockOffset;
 
                   retryAll = true;
                   blockHeaderRolledBack = true;
@@ -838,7 +847,9 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
     return [successfulQuoteStates, failedQuoteStates, pendingQuoteStates];
   }
 
-  private processQuoteResults<TRoute extends V3Route | V2Route | MixedRoute>(
+  private processQuoteResults<
+    TRoute extends CLRoute | ClassicRoute | MixedRoute
+  >(
     quoteResults: Result<[BigNumber, BigNumber[], number[], BigNumber]>[],
     routes: TRoute[],
     amounts: CurrencyAmount[]
@@ -990,26 +1001,26 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
 
   /**
    * Throw an error for incorrect routes / function combinations
-   * @param routes Any combination of V3, V2, and Mixed routes.
+   * @param routes Any combination of CL, Classic, and Mixed routes.
    * @param functionName
-   * @param useMixedRouteQuoter true if there are ANY V2Routes or MixedRoutes in the routes parameter
+   * @param useMixedRouteQuoter true if there are ANY ClassicRoutes or MixedRoutes in the routes parameter
    */
   protected validateRoutes(
-    routes: (V3Route | V2Route | MixedRoute)[],
+    routes: (CLRoute | ClassicRoute | MixedRoute)[],
     functionName: string,
     useMixedRouteQuoter: boolean
   ) {
-    /// We do not send any V3Routes to new qutoer becuase it is not deployed on chains besides mainnet
+    /// We do not send any CLRoutes to new qutoer becuase it is not deployed on chains besides mainnet
     if (
-      routes.some((route) => route.protocol === Protocol.V3) &&
+      routes.some((route) => route.protocol === Protocol.CL) &&
       useMixedRouteQuoter
     ) {
-      throw new Error(`Cannot use mixed route quoter with V3 routes`);
+      throw new Error(`Cannot use mixed route quoter with CL routes`);
     }
 
-    /// We cannot call quoteExactOutput with V2 or Mixed routes
+    /// We cannot call quoteExactOutput with Classic or Mixed routes
     if (functionName === 'quoteExactOutput' && useMixedRouteQuoter) {
-      throw new Error('Cannot call quoteExactOutput with V2 or Mixed routes');
+      throw new Error('Cannot call quoteExactOutput with Classic or Mixed routes');
     }
   }
 }

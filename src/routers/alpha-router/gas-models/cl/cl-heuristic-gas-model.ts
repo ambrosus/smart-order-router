@@ -1,6 +1,6 @@
+import { Pool } from '@airdao/astra-cl-sdk';
+import { ChainId, Percent, Price, TradeType } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Percent, Price, TradeType } from '@airdao/sdk-core';
-import { Pool } from '@airdao/v3-sdk';
 import _ from 'lodash';
 
 import {
@@ -8,11 +8,11 @@ import {
   SwapType,
   WRAPPED_NATIVE_CURRENCY,
 } from '../../../..';
-import { ProviderConfig } from '../../../../providers/provider';
 import {
   ArbitrumGasData,
   OptimismGasData,
-} from '../../../../providers/v3/gas-data-provider';
+} from '../../../../providers/cl/gas-data-provider';
+import { ProviderConfig } from '../../../../providers/provider';
 import { CurrencyAmount } from '../../../../util/amounts';
 import { getL2ToL1GasUsed } from '../../../../util/gas-factory-helpers';
 import { log } from '../../../../util/log';
@@ -20,7 +20,7 @@ import {
   buildSwapMethodParameters,
   buildTrade,
 } from '../../../../util/methodParameters';
-import { V3RouteWithValidQuote } from '../../entities/route-with-valid-quote';
+import { CLRouteWithValidQuote } from '../../entities/route-with-valid-quote';
 import {
   BuildOnChainGasModelFactoryType,
   IGasModel,
@@ -37,7 +37,7 @@ import {
 } from './gas-costs';
 
 /**
- * Computes a gas estimate for a V3 swap using heuristics.
+ * Computes a gas estimate for a CL swap using heuristics.
  * Considers number of hops in the route, number of ticks crossed
  * and the typical base cost for a swap.
  *
@@ -49,12 +49,12 @@ import {
  *     the full balance token being swapped, and approvals.
  *  2/ Tracking gas used using a wrapper contract is not accurate with Multicall
  *     due to EIP-2929. We would have to make a request for every swap we wanted to estimate.
- *  3/ For V2 we simulate all our swaps off-chain so have no way to track gas used.
+ *  3/ For Classic we simulate all our swaps off-chain so have no way to track gas used.
  *
  * @export
- * @class V3HeuristicGasModelFactory
+ * @class CLHeuristicGasModelFactory
  */
-export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
+export class CLHeuristicGasModelFactory extends IOnChainGasModelFactory {
   constructor() {
     super();
   }
@@ -68,7 +68,7 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
     l2GasDataProvider,
     providerConfig,
   }: BuildOnChainGasModelFactoryType): Promise<
-    IGasModel<V3RouteWithValidQuote>
+    IGasModel<CLRouteWithValidQuote>
   > {
     const l2GasData = l2GasDataProvider
       ? await l2GasDataProvider.getGasData()
@@ -77,7 +77,7 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
     const usdPool: Pool = pools.usdPool;
 
     const calculateL1GasFees = async (
-      route: V3RouteWithValidQuote[]
+      route: CLRouteWithValidQuote[]
     ): Promise<{
       gasUsedL1: BigNumber;
       gasCostL1USD: CurrencyAmount;
@@ -133,7 +133,7 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
       let gasCostL1QuoteToken = costNativeCurrency;
       // if the inputted token is not in the native currency, quote a native/quote token pool to get the gas cost in terms of the quote token
       if (!quoteToken.equals(nativeCurrency)) {
-        const nativePool: Pool | null = pools.nativeQuoteTokenV3Pool;
+        const nativePool: Pool | null = pools.nativeQuoteTokenCLPool;
         if (!nativePool) {
           log.info(
             'Could not find a pool to convert the cost into the quote token'
@@ -156,13 +156,13 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
       };
     };
 
-    // If our quote token is WETH, we don't need to convert our gas use to be in terms
+    // If our quote token is SAMB, we don't need to convert our gas use to be in terms
     // of the quote token in order to produce a gas adjusted amount.
     // We do return a gas use in USD however, so we still convert to usd.
     const nativeCurrency = WRAPPED_NATIVE_CURRENCY[chainId]!;
     if (quoteToken.equals(nativeCurrency)) {
       const estimateGasCost = (
-        routeWithValidQuote: V3RouteWithValidQuote
+        routeWithValidQuote: CLRouteWithValidQuote
       ): {
         gasEstimate: BigNumber;
         gasCostInToken: CurrencyAmount;
@@ -199,12 +199,12 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
     }
 
     // If the quote token is not in the native currency, we convert the gas cost to be in terms of the quote token.
-    // We do this by getting the highest liquidity <quoteToken>/<nativeCurrency> pool. eg. <quoteToken>/ETH pool.
-    const nativePool: Pool | null = pools.nativeQuoteTokenV3Pool;
+    // We do this by getting the highest liquidity <quoteToken>/<nativeCurrency> pool. eg. <quoteToken>/AMB pool.
+    const nativePool: Pool | null = pools.nativeQuoteTokenCLPool;
 
     let nativeAmountPool: Pool | null = null;
     if (!amountToken.equals(nativeCurrency)) {
-      nativeAmountPool = pools.nativeAmountTokenV3Pool;
+      nativeAmountPool = pools.nativeAmountTokenCLPool;
     }
 
     const usdToken =
@@ -213,7 +213,7 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
         : usdPool.token0;
 
     const estimateGasCost = (
-      routeWithValidQuote: V3RouteWithValidQuote
+      routeWithValidQuote: CLRouteWithValidQuote
     ): {
       gasEstimate: BigNumber;
       gasCostInToken: CurrencyAmount;
@@ -245,9 +245,9 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
             {
               nativeTokenPriceBase: nativeTokenPrice.baseCurrency,
               nativeTokenPriceQuote: nativeTokenPrice.quoteCurrency,
-              gasCostInEth: totalGasCostNativeCurrency.currency,
+              gasCostInAmb: totalGasCostNativeCurrency.currency,
             },
-            'Debug eth price token issue'
+            'Debug amb price token issue'
           );
           throw err;
         }
@@ -259,8 +259,8 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
         );
       }
 
-      // Highest liquidity pool for the non quote token / ETH
-      // A pool with the non quote token / ETH should not be required and errors should be handled separately
+      // Highest liquidity pool for the non quote token / AMB
+      // A pool with the non quote token / AMB should not be required and errors should be handled separately
       if (nativeAmountPool) {
         // get current execution price (amountToken / quoteToken)
         const executionPrice = new Price(
@@ -287,7 +287,7 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
         );
 
         // Note that the syntheticGasCost being lessThan the original quoted value is not always strictly better
-        // e.g. the scenario where the amountToken/ETH pool is very illiquid as well and returns an extremely small number
+        // e.g. the scenario where the amountToken/AMB pool is very illiquid as well and returns an extremely small number
         // however, it is better to have the gasEstimation be almost 0 than almost infinity, as the user will still receive a quote
         if (
           gasCostInTermsOfQuoteToken === null ||
@@ -365,7 +365,7 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
   }
 
   private estimateGas(
-    routeWithValidQuote: V3RouteWithValidQuote,
+    routeWithValidQuote: CLRouteWithValidQuote,
     gasPriceWei: BigNumber,
     chainId: ChainId,
     providerConfig?: ProviderConfig
@@ -422,13 +422,13 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
    * we replicate the gas cost accounting here.
    */
   private calculateOptimismToL1SecurityFee(
-    routes: V3RouteWithValidQuote[],
+    routes: CLRouteWithValidQuote[],
     swapConfig: SwapOptionsUniversalRouter,
     gasData: OptimismGasData
   ): [BigNumber, BigNumber] {
     const { l1BaseFee, scalar, decimals, overhead } = gasData;
 
-    const route: V3RouteWithValidQuote = routes[0]!;
+    const route: CLRouteWithValidQuote = routes[0]!;
     const amountToken =
       route.tradeType == TradeType.EXACT_INPUT
         ? route.amount.currency
@@ -456,13 +456,13 @@ export class V3HeuristicGasModelFactory extends IOnChainGasModelFactory {
   }
 
   private calculateArbitrumToL1SecurityFee(
-    routes: V3RouteWithValidQuote[],
+    routes: CLRouteWithValidQuote[],
     swapConfig: SwapOptionsUniversalRouter,
     gasData: ArbitrumGasData
   ): [BigNumber, BigNumber] {
     const { perL2TxFee, perL1CalldataFee } = gasData;
 
-    const route: V3RouteWithValidQuote = routes[0]!;
+    const route: CLRouteWithValidQuote = routes[0]!;
 
     const amountToken =
       route.tradeType == TradeType.EXACT_INPUT

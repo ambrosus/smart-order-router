@@ -1,4 +1,10 @@
-import { ChainId, Currency, Ether, NativeCurrency, Token } from '@airdao/sdk-core';
+import {
+  Amber,
+  ChainId,
+  Currency,
+  NativeCurrency,
+  Token,
+} from '@airdao/astra-sdk-core';
 
 // WIP: Gnosis, Moonbeam
 export const SUPPORTED_CHAINS: ChainId[] = [
@@ -20,7 +26,7 @@ export const SUPPORTED_CHAINS: ChainId[] = [
   // Gnosis and Moonbeam don't yet have contracts deployed yet
 ];
 
-export const V2_SUPPORTED = [
+export const CLASSIC_SUPPORTED = [
   ChainId.MAINNET,
   ChainId.GOERLI,
   ChainId.SEPOLIA,
@@ -109,16 +115,15 @@ export enum ChainName {
   AIRDAO_TEST = 'airdao-test',
 }
 
-
 export enum NativeCurrencyName {
   // Strings match input for CLI
-  ETHER = 'ETH',
-  MATIC = 'MATIC',
-  CELO = 'CELO',
-  GNOSIS = 'XDAI',
-  MOONBEAM = 'GLMR',
-  BNB = 'BNB',
-  AVALANCHE = 'AVAX',
+  // ETHER = 'ETH',
+  // MATIC = 'MATIC',
+  // CELO = 'CELO',
+  // GNOSIS = 'XDAI',
+  // MOONBEAM = 'GLMR',
+  // BNB = 'BNB',
+  // AVALANCHE = 'AVAX',
   AMBER = 'AMB',
 }
 
@@ -158,9 +163,7 @@ export const NATIVE_NAMES_BY_ID: { [chainId: number]: string[] } = {
     'ETHER',
     '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
   ],
-  [ChainId.POLYGON]: [
-    'MATIC', '0x0000000000000000000000000000000000001010'
-  ],
+  [ChainId.POLYGON]: ['MATIC', '0x0000000000000000000000000000000000001010'],
   [ChainId.POLYGON_MUMBAI]: [
     'MATIC',
     '0x0000000000000000000000000000000000001010',
@@ -169,11 +172,7 @@ export const NATIVE_NAMES_BY_ID: { [chainId: number]: string[] } = {
   [ChainId.CELO_ALFAJORES]: ['CELO'],
   [ChainId.GNOSIS]: ['XDAI'],
   [ChainId.MOONBEAM]: ['GLMR'],
-  [ChainId.BNB]: [
-    'BNB',
-    'BNB',
-    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
-  ],
+  [ChainId.BNB]: ['BNB', 'BNB', '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'],
   [ChainId.AVALANCHE]: [
     'AVAX',
     'AVALANCHE',
@@ -574,7 +573,7 @@ class AvalancheNativeCurrency extends NativeCurrency {
   }
 }
 
-export class ExtendedEther extends Ether {
+export class ExtendedAmber extends Amber {
   public get wrapped(): Token {
     if (this.chainId in WRAPPED_NATIVE_CURRENCY) {
       return WRAPPED_NATIVE_CURRENCY[this.chainId as ChainId];
@@ -582,13 +581,13 @@ export class ExtendedEther extends Ether {
     throw new Error('Unsupported chain ID');
   }
 
-  private static _cachedExtendedEther: { [chainId: number]: NativeCurrency } =
+  private static _cachedExtendedAmber: { [chainId: number]: NativeCurrency } =
     {};
 
-  public static onChain(chainId: number): ExtendedEther {
+  public static onChain(chainId: number): ExtendedAmber {
     return (
-      this._cachedExtendedEther[chainId] ??
-      (this._cachedExtendedEther[chainId] = new ExtendedEther(chainId))
+      this._cachedExtendedAmber[chainId] ??
+      (this._cachedExtendedAmber[chainId] = new ExtendedAmber(chainId))
     );
   }
 }
@@ -612,7 +611,7 @@ export function nativeOnChain(chainId: number): NativeCurrency {
   } else if (isAvax(chainId)) {
     cachedNativeCurrency[chainId] = new AvalancheNativeCurrency(chainId);
   } else {
-    cachedNativeCurrency[chainId] = ExtendedEther.onChain(chainId);
+    cachedNativeCurrency[chainId] = ExtendedAmber.onChain(chainId);
   }
 
   return cachedNativeCurrency[chainId]!;

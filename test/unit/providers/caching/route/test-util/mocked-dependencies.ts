@@ -1,6 +1,6 @@
+import { Protocol } from '@airdao/astra-router-sdk';
+import { ChainId, TradeType } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@airdao/router-sdk';
-import { ChainId, TradeType } from '@airdao/sdk-core';
 import {
   DAI_MAINNET,
   USDC_MAINNET,
@@ -9,13 +9,13 @@ import {
 } from '../../../../../../build/main';
 import {
   CachedRoutes,
+  ClassicRoute,
   CurrencyAmount,
   DAI_MAINNET as DAI,
   MixedRoute,
   MixedRouteWithValidQuote,
   MixedRouteWithValidQuoteParams,
   USDC_MAINNET as USDC,
-  V2Route,
   V2RouteWithValidQuote,
   V2RouteWithValidQuoteParams,
   V3RouteWithValidQuoteParams,
@@ -37,7 +37,7 @@ import {
 export function getV2RouteWithValidQuoteStub(
   overrides?: Partial<V2RouteWithValidQuoteParams>
 ): V2RouteWithValidQuote {
-  const route = new V2Route([USDC_DAI], USDC_MAINNET, DAI_MAINNET);
+  const route = new ClassicRoute([USDC_DAI], USDC_MAINNET, DAI_MAINNET);
 
   return new V2RouteWithValidQuote({
     amount: CurrencyAmount.fromRawAmount(USDC, 100),

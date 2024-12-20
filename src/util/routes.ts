@@ -1,28 +1,28 @@
-import { Protocol } from '@airdao/router-sdk';
-import { Percent } from '@airdao/sdk-core';
-import { Pair } from '@airdao/v2-sdk';
-import { Pool } from '@airdao/v3-sdk';
+import { Pool } from '@airdao/astra-cl-sdk';
+import { Pair } from '@airdao/astra-classic-sdk';
+import { Protocol } from '@airdao/astra-router-sdk';
+import { Percent } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
 import { RouteWithValidQuote } from '../routers/alpha-router';
-import { MixedRoute, V2Route, V3Route } from '../routers/router';
+import { ClassicRoute, CLRoute, MixedRoute } from '../routers/router';
 
-import { V3_CORE_FACTORY_ADDRESSES } from './addresses';
+import { CL_CORE_FACTORY_ADDRESSES } from './addresses';
 
 import { CurrencyAmount } from '.';
 
 export const routeToString = (
-  route: V3Route | V2Route | MixedRoute
+  route: CLRoute | ClassicRoute | MixedRoute
 ): string => {
   const routeStr = [];
   const tokens =
-    route.protocol === Protocol.V3
+    route.protocol === Protocol.CL
       ? route.tokenPath
-      : // MixedRoute and V2Route have path
+      : // MixedRoute and ClassicRoute have path
         route.path;
   const tokenPath = _.map(tokens, (token) => `${token.symbol}`);
   const pools =
-    route.protocol === Protocol.V3 || route.protocol === Protocol.MIXED
+    route.protocol === Protocol.CL || route.protocol === Protocol.MIXED
       ? route.pools
       : route.pairs;
   const poolFeePath = _.map(pools, (pool) => {
@@ -33,7 +33,7 @@ export const routeToString = (
             pool.token1,
             pool.fee,
             undefined,
-            V3_CORE_FACTORY_ADDRESSES[pool.chainId]
+            CL_CORE_FACTORY_ADDRESSES[pool.chainId]
           )}]`
         : ` -- [${Pair.getAddress(
             (pool as Pair).token0,
@@ -66,9 +66,9 @@ export const routeAmountsToString = (
   const routeStrings = _.map(routeAmounts, ({ protocol, route, amount }) => {
     const portion = amount.divide(total);
     const percent = new Percent(portion.numerator, portion.denominator);
-    /// @dev special case for MIXED routes we want to show user friendly V2+V3 instead
+    /// @dev special case for MIXED routes we want to show user friendly Classic+CL instead
     return `[${
-      protocol == Protocol.MIXED ? 'V2 + V3' : protocol
+      protocol == Protocol.MIXED ? 'Classic + CL' : protocol
     }] ${percent.toFixed(2)}% = ${routeToString(route)}`;
   });
 

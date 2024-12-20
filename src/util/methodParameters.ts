@@ -1,28 +1,28 @@
+import { Route as CLRouteRaw } from '@airdao/astra-cl-sdk';
+import { Route as ClassicRouteRaw } from '@airdao/astra-classic-sdk';
 import {
   MixedRouteSDK,
   Protocol,
   SwapRouter as SwapRouter02,
   Trade,
-} from '@airdao/router-sdk';
-import { ChainId, Currency, TradeType } from '@airdao/sdk-core';
+} from '@airdao/astra-router-sdk';
+import { ChainId, Currency, TradeType } from '@airdao/astra-sdk-core';
 import {
   SwapRouter as UniveralRouter,
   UNIVERSAL_ROUTER_ADDRESS,
 } from '@airdao/universal-router-sdk';
-import { Route as V2RouteRaw } from '@airdao/v2-sdk';
-import { Route as V3RouteRaw } from '@airdao/v3-sdk';
 import _ from 'lodash';
 
 import {
+  ClassicRouteWithValidQuote,
+  CLRouteWithValidQuote,
   CurrencyAmount,
   MethodParameters,
   MixedRouteWithValidQuote,
   RouteWithValidQuote,
-  SWAP_ROUTER_02_ADDRESSES,
   SwapOptions,
   SwapType,
-  V2RouteWithValidQuote,
-  V3RouteWithValidQuote,
+  SWAP_ROUTER_02_ADDRESSES,
 } from '..';
 
 export function buildTrade<TTradeType extends TradeType>(
@@ -32,29 +32,29 @@ export function buildTrade<TTradeType extends TradeType>(
   routeAmounts: RouteWithValidQuote[]
 ): Trade<Currency, Currency, TTradeType> {
   /// Removed partition because of new mixedRoutes
-  const v3RouteAmounts = _.filter(
+  const clRouteAmounts = _.filter(
     routeAmounts,
-    (routeAmount) => routeAmount.protocol === Protocol.V3
+    (routeAmount) => routeAmount.protocol === Protocol.CL
   );
-  const v2RouteAmounts = _.filter(
+  const classicRouteAmounts = _.filter(
     routeAmounts,
-    (routeAmount) => routeAmount.protocol === Protocol.V2
+    (routeAmount) => routeAmount.protocol === Protocol.Classic
   );
   const mixedRouteAmounts = _.filter(
     routeAmounts,
     (routeAmount) => routeAmount.protocol === Protocol.MIXED
   );
 
-  const v3Routes = _.map<
-    V3RouteWithValidQuote,
+  const clRoutes = _.map<
+    CLRouteWithValidQuote,
     {
-      routev3: V3RouteRaw<Currency, Currency>;
+      routecl: CLRouteRaw<Currency, Currency>;
       inputAmount: CurrencyAmount;
       outputAmount: CurrencyAmount;
     }
   >(
-    v3RouteAmounts as V3RouteWithValidQuote[],
-    (routeAmount: V3RouteWithValidQuote) => {
+    clRouteAmounts as CLRouteWithValidQuote[],
+    (routeAmount: CLRouteWithValidQuote) => {
       const { route, amount, quote } = routeAmount;
 
       // The route, amount and quote are all in terms of wrapped tokens.
@@ -72,14 +72,14 @@ export function buildTrade<TTradeType extends TradeType>(
           quote.denominator
         );
 
-        const routeRaw = new V3RouteRaw(
+        const routeRaw = new CLRouteRaw(
           route.pools,
           amountCurrency.currency,
           quoteCurrency.currency
         );
 
         return {
-          routev3: routeRaw,
+          routecl: routeRaw,
           inputAmount: amountCurrency,
           outputAmount: quoteCurrency,
         };
@@ -96,14 +96,14 @@ export function buildTrade<TTradeType extends TradeType>(
           amount.denominator
         );
 
-        const routeCurrency = new V3RouteRaw(
+        const routeCurrency = new CLRouteRaw(
           route.pools,
           quoteCurrency.currency,
           amountCurrency.currency
         );
 
         return {
-          routev3: routeCurrency,
+          routecl: routeCurrency,
           inputAmount: quoteCurrency,
           outputAmount: amountCurrency,
         };
@@ -111,16 +111,16 @@ export function buildTrade<TTradeType extends TradeType>(
     }
   );
 
-  const v2Routes = _.map<
-    V2RouteWithValidQuote,
+  const classicRoutes = _.map<
+    ClassicRouteWithValidQuote,
     {
-      routev2: V2RouteRaw<Currency, Currency>;
+      routeclassic: ClassicRouteRaw<Currency, Currency>;
       inputAmount: CurrencyAmount;
       outputAmount: CurrencyAmount;
     }
   >(
-    v2RouteAmounts as V2RouteWithValidQuote[],
-    (routeAmount: V2RouteWithValidQuote) => {
+    classicRouteAmounts as ClassicRouteWithValidQuote[],
+    (routeAmount: ClassicRouteWithValidQuote) => {
       const { route, amount, quote } = routeAmount;
 
       // The route, amount and quote are all in terms of wrapped tokens.
@@ -138,14 +138,14 @@ export function buildTrade<TTradeType extends TradeType>(
           quote.denominator
         );
 
-        const routeV2SDK = new V2RouteRaw(
+        const routeClassicSDK = new ClassicRouteRaw(
           route.pairs,
           amountCurrency.currency,
           quoteCurrency.currency
         );
 
         return {
-          routev2: routeV2SDK,
+          routeclassic: routeClassicSDK,
           inputAmount: amountCurrency,
           outputAmount: quoteCurrency,
         };
@@ -162,14 +162,14 @@ export function buildTrade<TTradeType extends TradeType>(
           amount.denominator
         );
 
-        const routeV2SDK = new V2RouteRaw(
+        const routeClassicSDK = new ClassicRouteRaw(
           route.pairs,
           quoteCurrency.currency,
           amountCurrency.currency
         );
 
         return {
-          routev2: routeV2SDK,
+          routeclassic: routeClassicSDK,
           inputAmount: quoteCurrency,
           outputAmount: amountCurrency,
         };
@@ -223,7 +223,7 @@ export function buildTrade<TTradeType extends TradeType>(
     }
   );
 
-  const trade = new Trade({ v2Routes, v3Routes, mixedRoutes, tradeType });
+  const trade = new Trade({ classicRoutes, clRoutes, mixedRoutes, tradeType });
 
   return trade;
 }

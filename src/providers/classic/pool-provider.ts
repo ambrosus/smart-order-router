@@ -1,10 +1,10 @@
+import { Pair } from '@airdao/astra-classic-sdk';
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Token } from '@airdao/sdk-core';
-import { Pair } from '@airdao/v2-sdk';
 import retry, { Options as RetryOptions } from 'async-retry';
 import _ from 'lodash';
 
-import { IUniswapV2Pair__factory } from '../../types/v2/factories/IUniswapV2Pair__factory';
+import { IAstraPair__factory } from '../../types/classic';
 import {
   CurrencyAmount,
   ID_TO_NETWORK_NAME,
@@ -15,9 +15,7 @@ import { log } from '../../util/log';
 import { poolToString } from '../../util/routes';
 import { IMulticallProvider, Result } from '../multicall-provider';
 import { ProviderConfig } from '../provider';
-import {
-  ITokenPropertiesProvider,
-} from '../token-properties-provider';
+import { ITokenPropertiesProvider } from '../token-properties-provider';
 import { TokenValidationResult } from '../token-validator-provider';
 
 type IReserves = {
@@ -27,12 +25,12 @@ type IReserves = {
 };
 
 /**
- * Provider for getting V2 pools.
+ * Provider for getting Classic pools.
  *
  * @export
- * @interface IV2PoolProvider
+ * @interface IClassicPoolProvider
  */
-export interface IV2PoolProvider {
+export interface IClassicPoolProvider {
   /**
    * Gets the pools for the specified token pairs.
    *
@@ -43,7 +41,7 @@ export interface IV2PoolProvider {
   getPools(
     tokenPairs: [Token, Token][],
     providerConfig?: ProviderConfig
-  ): Promise<V2PoolAccessor>;
+  ): Promise<ClassicPoolAccessor>;
 
   /**
    * Gets the pool address for the specified token pair.
@@ -58,21 +56,21 @@ export interface IV2PoolProvider {
   ): { poolAddress: string; token0: Token; token1: Token };
 }
 
-export type V2PoolAccessor = {
+export type ClassicPoolAccessor = {
   getPool: (tokenA: Token, tokenB: Token) => Pair | undefined;
   getPoolByAddress: (address: string) => Pair | undefined;
   getAllPools: () => Pair[];
 };
 
-export type V2PoolRetryOptions = RetryOptions;
+export type ClassicPoolRetryOptions = RetryOptions;
 
-export class V2PoolProvider implements IV2PoolProvider {
+export class ClassicPoolProvider implements IClassicPoolProvider {
   // Computing pool addresses is slow as it requires hashing, encoding etc.
   // Addresses never change so can always be cached.
   private POOL_ADDRESS_CACHE: { [key: string]: string } = {};
 
   /**
-   * Creates an instance of V2PoolProvider.
+   * Creates an instance of ClassicPoolProvider.
    * @param chainId The chain id to use.
    * @param multicall2Provider The multicall provider to use to get the pools.
    * @param tokenPropertiesProvider The token properties provider to use to get token properties.
@@ -82,7 +80,7 @@ export class V2PoolProvider implements IV2PoolProvider {
     protected chainId: ChainId,
     protected multicall2Provider: IMulticallProvider,
     protected tokenPropertiesProvider: ITokenPropertiesProvider,
-    protected retryOptions: V2PoolRetryOptions = {
+    protected retryOptions: ClassicPoolRetryOptions = {
       retries: 2,
       minTimeout: 50,
       maxTimeout: 500,
@@ -92,7 +90,7 @@ export class V2PoolProvider implements IV2PoolProvider {
   public async getPools(
     tokenPairs: [Token, Token][],
     providerConfig?: ProviderConfig
-  ): Promise<V2PoolAccessor> {
+  ): Promise<ClassicPoolAccessor> {
     const poolAddressSet: Set<string> = new Set<string>();
     const sortedTokenPairs: Array<[Token, Token]> = [];
     const sortedPoolAddresses: string[] = [];
@@ -118,14 +116,14 @@ export class V2PoolProvider implements IV2PoolProvider {
       `getPools called with ${tokenPairs.length} token pairs. Deduped down to ${poolAddressSet.size}`
     );
 
-    metric.putMetric('V2_RPC_POOL_RPC_CALL', 1, MetricLoggerUnit.None);
+    metric.putMetric('CLASSIC_RPC_POOL_RPC_CALL', 1, MetricLoggerUnit.None);
     metric.putMetric(
-      'V2GetReservesBatchSize',
+      'ClassicGetReservesBatchSize',
       sortedPoolAddresses.length,
       MetricLoggerUnit.Count
     );
     metric.putMetric(
-      `V2GetReservesBatchSize_${ID_TO_NETWORK_NAME(this.chainId)}`,
+      `ClassicGetReservesBatchSize_${ID_TO_NETWORK_NAME(this.chainId)}`,
       sortedPoolAddresses.length,
       MetricLoggerUnit.Count
     );
@@ -176,8 +174,12 @@ export class V2PoolProvider implements IV2PoolProvider {
           token0.symbol,
           token0.name,
           true, // at this point we know it's valid token address
-          tokenPropertiesMap[token0.address.toLowerCase()]?.tokenFeeResult?.buyFeeBps,
-          tokenPropertiesMap[token0.address.toLowerCase()]?.tokenFeeResult?.sellFeeBps
+          tokenPropertiesMap[
+            token0.address.toLowerCase()
+          ]?.tokenFeeResult?.buyFeeBps,
+          tokenPropertiesMap[
+            token0.address.toLowerCase()
+          ]?.tokenFeeResult?.sellFeeBps
         );
       }
 
@@ -192,8 +194,12 @@ export class V2PoolProvider implements IV2PoolProvider {
           token1.symbol,
           token1.name,
           true, // at this point we know it's valid token address
-          tokenPropertiesMap[token1.address.toLowerCase()]?.tokenFeeResult?.buyFeeBps,
-          tokenPropertiesMap[token1.address.toLowerCase()]?.tokenFeeResult?.sellFeeBps
+          tokenPropertiesMap[
+            token1.address.toLowerCase()
+          ]?.tokenFeeResult?.buyFeeBps,
+          tokenPropertiesMap[
+            token1.address.toLowerCase()
+          ]?.tokenFeeResult?.sellFeeBps
         );
       }
 
@@ -270,7 +276,7 @@ export class V2PoolProvider implements IV2PoolProvider {
         TReturn
       >({
         addresses: poolAddresses,
-        contractInterface: IUniswapV2Pair__factory.createInterface(),
+        contractInterface: IAstraPair__factory.createInterface(),
         functionName: functionName,
         providerConfig,
       });

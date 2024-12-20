@@ -1,23 +1,24 @@
-import { JsonRpcProvider } from '@ethersproject/providers';
-import { ChainId, TradeType } from '@airdao/sdk-core';
+import { ChainId, TradeType } from '@airdao/astra-sdk-core';
 import { PERMIT2_ADDRESS } from '@airdao/universal-router-sdk';
+import { JsonRpcProvider } from '@ethersproject/providers';
 import { BigNumber } from 'ethers/lib/ethers';
 
 import { SwapOptions, SwapRoute, SwapType } from '../routers';
 import { Erc20__factory } from '../types/other/factories/Erc20__factory';
 import { Permit2__factory } from '../types/other/factories/Permit2__factory';
-import {
-  CurrencyAmount,
-  log,
-  SWAP_ROUTER_02_ADDRESSES,
-} from '../util';
+import { CurrencyAmount, log, SWAP_ROUTER_02_ADDRESSES } from '../util';
 
+import { ArbitrumGasData, OptimismGasData } from './cl/gas-data-provider';
 import { IPortionProvider } from './portion-provider';
 import { ProviderConfig } from './provider';
-import { ArbitrumGasData, OptimismGasData } from './v3/gas-data-provider';
 
 export type SimulationResult = {
-  transaction: { hash: string; gas_used: number; gas: number; error_message: string };
+  transaction: {
+    hash: string;
+    gas_used: number;
+    gas: number;
+    error_message: string;
+  };
   simulation: { state_overrides: Record<string, unknown> };
 };
 
@@ -43,7 +44,11 @@ export abstract class Simulator {
    * Returns a new SwapRoute with simulated gas estimates
    * @returns SwapRoute
    */
-  constructor(provider: JsonRpcProvider, portionProvider: IPortionProvider, protected chainId: ChainId) {
+  constructor(
+    provider: JsonRpcProvider,
+    portionProvider: IPortionProvider,
+    protected chainId: ChainId
+  ) {
     this.provider = provider;
     this.portionProvider = portionProvider;
   }

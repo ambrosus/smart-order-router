@@ -1,10 +1,10 @@
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import { Interface } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
 import { parseBytes32String } from '@ethersproject/strings';
-import { ChainId, Token } from '@airdao/sdk-core';
 import _ from 'lodash';
 
-import { IERC20Metadata__factory } from '../types/v3/factories/IERC20Metadata__factory';
+import { IERC20Metadata__factory } from '../types/cl';
 import { log, WRAPPED_NATIVE_CURRENCY } from '../util';
 
 import { IMulticallProvider, Result } from './multicall-provider';
@@ -469,7 +469,7 @@ export const USDC_BASE = new Token(
   6,
   'USDbC',
   'USD Base Coin'
-)
+);
 
 // Base Goerli Tokens
 export const USDC_BASE_GOERLI = new Token(
@@ -478,7 +478,7 @@ export const USDC_BASE_GOERLI = new Token(
   6,
   'USDbC',
   'USD Base Coin'
-)
+);
 
 // Gnosis Tokens
 export const USDC_ETHEREUM_GNOSIS = new Token(

@@ -1,15 +1,15 @@
+import { Protocol } from '@airdao/astra-router-sdk';
+import { ChainId, Currency, Token, TradeType } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@airdao/router-sdk';
-import { ChainId, Currency, Token, TradeType } from '@airdao/sdk-core';
 import _ from 'lodash';
 
 import {
+  IClassicPoolProvider,
+  IClassicQuoteProvider,
+  IClassicSubgraphProvider,
   ITokenListProvider,
   ITokenProvider,
   ITokenValidatorProvider,
-  IV2PoolProvider,
-  IV2QuoteProvider,
-  IV2SubgraphProvider,
   TokenValidationResult,
 } from '../../../providers';
 import {
@@ -19,33 +19,32 @@ import {
   MetricLoggerUnit,
   routeToString,
 } from '../../../util';
-import { V2Route } from '../../router';
+import { ClassicRoute } from '../../router';
 import { AlphaRouterConfig } from '../alpha-router';
-import { V2RouteWithValidQuote } from '../entities';
-import { computeAllV2Routes } from '../functions/compute-all-routes';
+import { ClassicRouteWithValidQuote } from '../entities';
+import { computeAllClassicRoutes } from '../functions/compute-all-routes';
 import {
   CandidatePoolsBySelectionCriteria,
-  V2CandidatePools,
+  ClassicCandidatePools,
 } from '../functions/get-candidate-pools';
-import { IGasModel, IV2GasModelFactory } from '../gas-models';
-import { NATIVE_OVERHEAD } from '../gas-models/v3/gas-costs';
+import { IClassicGasModelFactory, IGasModel } from '../gas-models';
+import { NATIVE_OVERHEAD } from '../gas-models/cl/gas-costs';
 
 import { BaseQuoter } from './base-quoter';
 import { GetQuotesResult } from './model/results/get-quotes-result';
 import { GetRoutesResult } from './model/results/get-routes-result';
 
-
-export class V2Quoter extends BaseQuoter<V2CandidatePools, V2Route> {
-  protected v2SubgraphProvider: IV2SubgraphProvider;
-  protected v2PoolProvider: IV2PoolProvider;
-  protected v2QuoteProvider: IV2QuoteProvider;
-  protected v2GasModelFactory: IV2GasModelFactory;
+export class ClassicQuoter extends BaseQuoter<ClassicCandidatePools, ClassicRoute> {
+  protected classicSubgraphProvider: IClassicSubgraphProvider;
+  protected classicPoolProvider: IClassicPoolProvider;
+  protected classicQuoteProvider: IClassicQuoteProvider;
+  protected classicGasModelFactory: IClassicGasModelFactory;
 
   constructor(
-    v2SubgraphProvider: IV2SubgraphProvider,
-    v2PoolProvider: IV2PoolProvider,
-    v2QuoteProvider: IV2QuoteProvider,
-    v2GasModelFactory: IV2GasModelFactory,
+    classicSubgraphProvider: IClassicSubgraphProvider,
+    classicPoolProvider: IClassicPoolProvider,
+    classicQuoteProvider: IClassicQuoteProvider,
+    classicGasModelFactory: IClassicGasModelFactory,
     tokenProvider: ITokenProvider,
     chainId: ChainId,
     blockedTokenListProvider?: ITokenListProvider,
@@ -54,28 +53,28 @@ export class V2Quoter extends BaseQuoter<V2CandidatePools, V2Route> {
     super(
       tokenProvider,
       chainId,
-      Protocol.V2,
+      Protocol.Classic,
       blockedTokenListProvider,
       tokenValidatorProvider
     );
-    this.v2SubgraphProvider = v2SubgraphProvider;
-    this.v2PoolProvider = v2PoolProvider;
-    this.v2QuoteProvider = v2QuoteProvider;
-    this.v2GasModelFactory = v2GasModelFactory;
+    this.classicSubgraphProvider = classicSubgraphProvider;
+    this.classicPoolProvider = classicPoolProvider;
+    this.classicQuoteProvider = classicQuoteProvider;
+    this.classicGasModelFactory = classicGasModelFactory;
   }
 
   protected async getRoutes(
     tokenIn: Token,
     tokenOut: Token,
-    v2CandidatePools: V2CandidatePools,
+    classicCandidatePools: ClassicCandidatePools,
     _tradeType: TradeType,
     routingConfig: AlphaRouterConfig
-  ): Promise<GetRoutesResult<V2Route>> {
+  ): Promise<GetRoutesResult<ClassicRoute>> {
     const beforeGetRoutes = Date.now();
     // Fetch all the pools that we will consider routing via. There are thousands
     // of pools, so we filter them to a set of candidate pools that we expect will
     // result in good prices.
-    const { poolAccessor, candidatePools } = v2CandidatePools;
+    const { poolAccessor, candidatePools } = classicCandidatePools;
     const poolsRaw = poolAccessor.getAllPools();
 
     // Drop any pools that contain tokens that can not be transferred according to the token validator.
@@ -107,7 +106,7 @@ export class V2Quoter extends BaseQuoter<V2CandidatePools, V2Route> {
 
     // Given all our candidate pools, compute all the possible ways to route from tokenIn to tokenOut.
     const { maxSwapsPerPath } = routingConfig;
-    const routes = computeAllV2Routes(
+    const routes = computeAllClassicRoutes(
       tokenIn,
       tokenOut,
       pools,
@@ -115,7 +114,7 @@ export class V2Quoter extends BaseQuoter<V2CandidatePools, V2Route> {
     );
 
     metric.putMetric(
-      'V2GetRoutesLoad',
+      'ClassicGetRoutesLoad',
       Date.now() - beforeGetRoutes,
       MetricLoggerUnit.Milliseconds
     );
@@ -127,24 +126,29 @@ export class V2Quoter extends BaseQuoter<V2CandidatePools, V2Route> {
   }
 
   public async getQuotes(
-    routes: V2Route[],
+    routes: ClassicRoute[],
     amounts: CurrencyAmount[],
     percents: number[],
     quoteToken: Token,
     tradeType: TradeType,
     _routingConfig: AlphaRouterConfig,
     candidatePools?: CandidatePoolsBySelectionCriteria,
-    _gasModel?: IGasModel<V2RouteWithValidQuote>,
+    _gasModel?: IGasModel<ClassicRouteWithValidQuote>,
     gasPriceWei?: BigNumber
   ): Promise<GetQuotesResult> {
     const beforeGetQuotes = Date.now();
-    log.info('Starting to get V2 quotes');
+    log.info('Starting to get Classic quotes');
     if (gasPriceWei === undefined) {
-      throw new Error('GasPriceWei for V2Routes is required to getQuotes');
+      throw new Error('GasPriceWei for ClassicRoutes is required to getQuotes');
     }
     // throw if we have no amounts or if there are different tokens in the amounts
-    if (amounts.length == 0 || !amounts.every((amount) => amount.currency.equals(amounts[0]!.currency))) {
-      throw new Error('Amounts must have at least one amount and must be same token');
+    if (
+      amounts.length == 0 ||
+      !amounts.every((amount) => amount.currency.equals(amounts[0]!.currency))
+    ) {
+      throw new Error(
+        'Amounts must have at least one amount and must be same token'
+      );
     }
     // safe to force unwrap here because we throw if there are no amounts
     const amountToken = amounts[0]!.currency;
@@ -156,35 +160,39 @@ export class V2Quoter extends BaseQuoter<V2CandidatePools, V2Route> {
     // For all our routes, and all the fractional amounts, fetch quotes on-chain.
     const quoteFn =
       tradeType == TradeType.EXACT_INPUT
-        ? this.v2QuoteProvider.getQuotesManyExactIn.bind(this.v2QuoteProvider)
-        : this.v2QuoteProvider.getQuotesManyExactOut.bind(this.v2QuoteProvider);
+        ? this.classicQuoteProvider.getQuotesManyExactIn.bind(this.classicQuoteProvider)
+        : this.classicQuoteProvider.getQuotesManyExactOut.bind(this.classicQuoteProvider);
 
     const beforeQuotes = Date.now();
 
     log.info(
-      `Getting quotes for V2 for ${routes.length} routes with ${amounts.length} amounts per route.`
+      `Getting quotes for Classic for ${routes.length} routes with ${amounts.length} amounts per route.`
     );
     const { routesWithQuotes } = await quoteFn(amounts, routes, _routingConfig);
 
-    const v2GasModel = await this.v2GasModelFactory.buildGasModel({
+    const classicGasModel = await this.classicGasModelFactory.buildGasModel({
       chainId: this.chainId,
       gasPriceWei,
-      poolProvider: this.v2PoolProvider,
+      poolProvider: this.classicPoolProvider,
       token: quoteToken,
       providerConfig: {
         ..._routingConfig,
-        additionalGasOverhead: NATIVE_OVERHEAD(this.chainId, amountToken, quoteToken)
+        additionalGasOverhead: NATIVE_OVERHEAD(
+          this.chainId,
+          amountToken,
+          quoteToken
+        ),
       },
     });
 
     metric.putMetric(
-      'V2QuotesLoad',
+      'ClassicQuotesLoad',
       Date.now() - beforeQuotes,
       MetricLoggerUnit.Milliseconds
     );
 
     metric.putMetric(
-      'V2QuotesFetched',
+      'ClassicQuotesFetched',
       _(routesWithQuotes)
         .map(([, quotes]) => quotes.length)
         .sum(),
@@ -207,20 +215,20 @@ export class V2Quoter extends BaseQuoter<V2CandidatePools, V2Route> {
               route: routeToString(route),
               amountQuote,
             },
-            'Dropping a null V2 quote for route.'
+            'Dropping a null Classic quote for route.'
           );
           continue;
         }
 
-        const routeWithValidQuote = new V2RouteWithValidQuote({
+        const routeWithValidQuote = new ClassicRouteWithValidQuote({
           route,
           rawQuote: quote,
           amount,
           percent,
-          gasModel: v2GasModel,
+          gasModel: classicGasModel,
           quoteToken,
           tradeType,
-          v2PoolProvider: this.v2PoolProvider,
+          classicPoolProvider: this.classicPoolProvider,
         });
 
         routesWithValidQuotes.push(routeWithValidQuote);
@@ -228,7 +236,7 @@ export class V2Quoter extends BaseQuoter<V2CandidatePools, V2Route> {
     }
 
     metric.putMetric(
-      'V2GetQuotesLoad',
+      'ClassicGetQuotesLoad',
       Date.now() - beforeGetQuotes,
       MetricLoggerUnit.Milliseconds
     );
@@ -242,7 +250,7 @@ export class V2Quoter extends BaseQuoter<V2CandidatePools, V2Route> {
   public async refreshRoutesThenGetQuotes(
     tokenIn: Token,
     tokenOut: Token,
-    routes: V2Route[],
+    routes: ClassicRoute[],
     amounts: CurrencyAmount[],
     percents: number[],
     quoteToken: Token,
@@ -255,10 +263,10 @@ export class V2Quoter extends BaseQuoter<V2CandidatePools, V2Route> {
       route.pairs.forEach((pair) => tokenPairs.push([pair.token0, pair.token1]))
     );
 
-    return this.v2PoolProvider
+    return this.classicPoolProvider
       .getPools(tokenPairs, routingConfig)
       .then((poolAccesor) => {
-        const routes = computeAllV2Routes(
+        const routes = computeAllClassicRoutes(
           tokenIn,
           tokenOut,
           poolAccesor.getAllPools(),

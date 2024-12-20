@@ -1,39 +1,39 @@
-import { Token } from '@airdao/sdk-core';
-import { Pair } from '@airdao/v2-sdk';
-import { Pool } from '@airdao/v3-sdk';
+import { Pool } from '@airdao/astra-cl-sdk';
+import { Pair } from '@airdao/astra-classic-sdk';
+import { Token } from '@airdao/astra-sdk-core';
 
 import { log } from '../../../util/log';
 import { poolToString, routeToString } from '../../../util/routes';
-import { MixedRoute, V2Route, V3Route } from '../../router';
+import { ClassicRoute, CLRoute, MixedRoute } from '../../router';
 
-export function computeAllV3Routes(
+export function computeAllCLRoutes(
   tokenIn: Token,
   tokenOut: Token,
   pools: Pool[],
   maxHops: number
-): V3Route[] {
-  return computeAllRoutes<Pool, V3Route>(
+): CLRoute[] {
+  return computeAllRoutes<Pool, CLRoute>(
     tokenIn,
     tokenOut,
     (route: Pool[], tokenIn: Token, tokenOut: Token) => {
-      return new V3Route(route, tokenIn, tokenOut);
+      return new CLRoute(route, tokenIn, tokenOut);
     },
     pools,
     maxHops
   );
 }
 
-export function computeAllV2Routes(
+export function computeAllClassicRoutes(
   tokenIn: Token,
   tokenOut: Token,
   pools: Pair[],
   maxHops: number
-): V2Route[] {
-  return computeAllRoutes<Pair, V2Route>(
+): ClassicRoute[] {
+  return computeAllRoutes<Pair, ClassicRoute>(
     tokenIn,
     tokenOut,
     (route: Pair[], tokenIn: Token, tokenOut: Token) => {
-      return new V2Route(route, tokenIn, tokenOut);
+      return new ClassicRoute(route, tokenIn, tokenOut);
     },
     pools,
     maxHops
@@ -55,7 +55,7 @@ export function computeAllMixedRoutes(
     parts,
     maxHops
   );
-  /// filter out pure v3 and v2 routes
+  /// filter out pure CL and CLassic routes
   return routesRaw.filter((route) => {
     return (
       !route.pools.every((pool) => pool instanceof Pool) &&
@@ -66,7 +66,7 @@ export function computeAllMixedRoutes(
 
 export function computeAllRoutes<
   TPool extends Pair | Pool,
-  TRoute extends V3Route | V2Route | MixedRoute
+  TRoute extends CLRoute | ClassicRoute | MixedRoute
 >(
   tokenIn: Token,
   tokenOut: Token,
@@ -134,7 +134,13 @@ export function computeAllRoutes<
     }
   };
 
-  computeRoutes(tokenIn, tokenOut, [], poolsUsed, new Set([tokenIn.address.toLowerCase()]));
+  computeRoutes(
+    tokenIn,
+    tokenOut,
+    [],
+    poolsUsed,
+    new Set([tokenIn.address.toLowerCase()])
+  );
 
   log.info(
     {

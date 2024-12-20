@@ -1,6 +1,6 @@
+import { ChainId } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { ChainId } from '@airdao/sdk-core';
 
 import { SwapOptions, SwapRoute, SwapType } from '../routers';
 import { log } from '../util';
@@ -9,36 +9,36 @@ import {
   initSwapRouteFromExisting,
 } from '../util/gas-factory-helpers';
 
+import { ArbitrumGasData, OptimismGasData } from './cl/gas-data-provider';
+import { ICLPoolProvider } from './cl/pool-provider';
+import { IClassicPoolProvider } from './classic/pool-provider';
 import { IPortionProvider } from './portion-provider';
 import { ProviderConfig } from './provider';
 import { SimulationStatus, Simulator } from './simulation-provider';
-import { IV2PoolProvider } from './v2/pool-provider';
-import { ArbitrumGasData, OptimismGasData } from './v3/gas-data-provider';
-import { IV3PoolProvider } from './v3/pool-provider';
 
-// We multiply eth estimate gas by this to add a buffer for gas limits
+// We multiply amb estimate gas by this to add a buffer for gas limits
 const DEFAULT_ESTIMATE_MULTIPLIER = 1.2;
 
-export class EthEstimateGasSimulator extends Simulator {
-  v2PoolProvider: IV2PoolProvider;
-  v3PoolProvider: IV3PoolProvider;
+export class AmbEstimateGasSimulator extends Simulator {
+  classicPoolProvider: IClassicPoolProvider;
+  clPoolProvider: ICLPoolProvider;
   private overrideEstimateMultiplier: { [chainId in ChainId]?: number };
 
   constructor(
     chainId: ChainId,
     provider: JsonRpcProvider,
-    v2PoolProvider: IV2PoolProvider,
-    v3PoolProvider: IV3PoolProvider,
+    classicPoolProvider: IClassicPoolProvider,
+    clPoolProvider: ICLPoolProvider,
     portionProvider: IPortionProvider,
     overrideEstimateMultiplier?: { [chainId in ChainId]?: number }
   ) {
     super(provider, portionProvider, chainId);
-    this.v2PoolProvider = v2PoolProvider;
-    this.v3PoolProvider = v3PoolProvider;
+    this.classicPoolProvider = classicPoolProvider;
+    this.clPoolProvider = clPoolProvider;
     this.overrideEstimateMultiplier = overrideEstimateMultiplier ?? {};
   }
 
-  async ethEstimateGas(
+  async ambEstimateGas(
     fromAddress: string,
     swapOptions: SwapOptions,
     route: SwapRoute,
@@ -106,16 +106,16 @@ export class EthEstimateGasSimulator extends Simulator {
       route.quote.currency.chainId,
       route,
       estimatedGasUsed,
-      this.v2PoolProvider,
-      this.v3PoolProvider,
+      this.classicPoolProvider,
+      this.clPoolProvider,
       l2GasData,
       providerConfig
     );
     return {
       ...initSwapRouteFromExisting(
         route,
-        this.v2PoolProvider,
-        this.v3PoolProvider,
+        this.classicPoolProvider,
+        this.clPoolProvider,
         this.portionProvider,
         quoteGasAdjusted,
         estimatedGasUsed,
@@ -157,7 +157,7 @@ export class EthEstimateGasSimulator extends Simulator {
         this.provider
       ))
     ) {
-      return await this.ethEstimateGas(
+      return await this.ambEstimateGas(
         fromAddress,
         swapOptions,
         swapRoute,

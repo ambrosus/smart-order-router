@@ -1,19 +1,30 @@
+import { Pool } from '@airdao/astra-cl-sdk';
+import { Pair } from '@airdao/astra-classic-sdk';
+import { Protocol } from '@airdao/astra-router-sdk';
+import { ChainId, Currency, Token, TradeType } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@airdao/router-sdk';
-import { ChainId, Currency, Token, TradeType } from '@airdao/sdk-core';
-import { Pair } from '@airdao/v2-sdk';
-import { Pool } from '@airdao/v3-sdk';
 import _ from 'lodash';
 
-import { ITokenListProvider, ITokenProvider, ITokenValidatorProvider, TokenValidationResult } from '../../../providers';
-import { CurrencyAmount, log, metric, MetricLoggerUnit, poolToString } from '../../../util';
-import { MixedRoute, V2Route, V3Route } from '../../router';
+import {
+  ITokenListProvider,
+  ITokenProvider,
+  ITokenValidatorProvider,
+  TokenValidationResult,
+} from '../../../providers';
+import {
+  CurrencyAmount,
+  log,
+  metric,
+  MetricLoggerUnit,
+  poolToString,
+} from '../../../util';
+import { ClassicRoute, CLRoute, MixedRoute } from '../../router';
 import { AlphaRouterConfig } from '../alpha-router';
 import { RouteWithValidQuote } from '../entities/route-with-valid-quote';
 import {
   CandidatePoolsBySelectionCriteria,
-  V2CandidatePools,
-  V3CandidatePools
+  ClassicCandidatePools,
+  CLCandidatePools,
 } from '../functions/get-candidate-pools';
 import { IGasModel } from '../gas-models';
 
@@ -28,8 +39,11 @@ import { GetQuotesResult, GetRoutesResult } from './model/results';
  * @template Route
  */
 export abstract class BaseQuoter<
-  CandidatePools extends V2CandidatePools | V3CandidatePools | [V3CandidatePools, V2CandidatePools],
-  Route extends V2Route | V3Route | MixedRoute
+  CandidatePools extends
+    | ClassicCandidatePools
+    | CLCandidatePools
+    | [CLCandidatePools, ClassicCandidatePools],
+  Route extends ClassicRoute | CLRoute | MixedRoute
 > {
   protected tokenProvider: ITokenProvider;
   protected chainId: ChainId;
@@ -69,7 +83,7 @@ export abstract class BaseQuoter<
     candidatePools: CandidatePools,
     tradeType: TradeType,
     routingConfig: AlphaRouterConfig
-  ): Promise<GetRoutesResult<Route>>
+  ): Promise<GetRoutesResult<Route>>;
 
   /**
    * Public method that will fetch quotes for the combination of every route and every amount.
@@ -95,7 +109,7 @@ export abstract class BaseQuoter<
     candidatePools?: CandidatePoolsBySelectionCriteria,
     gasModel?: IGasModel<RouteWithValidQuote>,
     gasPriceWei?: BigNumber
-  ): Promise<GetQuotesResult>
+  ): Promise<GetQuotesResult>;
 
   /**
    * Public method which would first get the routes and then get the quotes.
@@ -124,40 +138,49 @@ export abstract class BaseQuoter<
     gasModel?: IGasModel<RouteWithValidQuote>,
     gasPriceWei?: BigNumber
   ): Promise<GetQuotesResult> {
-    return this.getRoutes(tokenIn, tokenOut, candidatePools, tradeType, routingConfig)
-      .then((routesResult) => {
-        if (routesResult.routes.length == 1) {
-          metric.putMetric(`${this.protocol}QuoterSingleRoute`, 1, MetricLoggerUnit.Count);
-          percents = [100];
-          amounts = [amount];
-        }
-
-        if (routesResult.routes.length > 0) {
-          metric.putMetric(
-            `${this.protocol}QuoterRoutesFound`,
-            routesResult.routes.length,
-            MetricLoggerUnit.Count
-          );
-        } else {
-          metric.putMetric(
-            `${this.protocol}QuoterNoRoutesFound`,
-            routesResult.routes.length,
-            MetricLoggerUnit.Count
-          );
-        }
-
-        return this.getQuotes(
-          routesResult.routes,
-          amounts,
-          percents,
-          quoteToken,
-          tradeType,
-          routingConfig,
-          routesResult.candidatePools,
-          gasModel,
-          gasPriceWei
+    return this.getRoutes(
+      tokenIn,
+      tokenOut,
+      candidatePools,
+      tradeType,
+      routingConfig
+    ).then((routesResult) => {
+      if (routesResult.routes.length == 1) {
+        metric.putMetric(
+          `${this.protocol}QuoterSingleRoute`,
+          1,
+          MetricLoggerUnit.Count
         );
-      });
+        percents = [100];
+        amounts = [amount];
+      }
+
+      if (routesResult.routes.length > 0) {
+        metric.putMetric(
+          `${this.protocol}QuoterRoutesFound`,
+          routesResult.routes.length,
+          MetricLoggerUnit.Count
+        );
+      } else {
+        metric.putMetric(
+          `${this.protocol}QuoterNoRoutesFound`,
+          routesResult.routes.length,
+          MetricLoggerUnit.Count
+        );
+      }
+
+      return this.getQuotes(
+        routesResult.routes,
+        amounts,
+        percents,
+        quoteToken,
+        tradeType,
+        routingConfig,
+        routesResult.candidatePools,
+        gasModel,
+        gasPriceWei
+      );
+    });
   }
 
   protected async applyTokenValidatorToPools<T extends Pool | Pair>(
@@ -175,7 +198,8 @@ export abstract class BaseQuoter<
 
     const tokens = _.flatMap(pools, (pool) => [pool.token0, pool.token1]);
 
-    const tokenValidationResults = await this.tokenValidatorProvider.validateTokens(tokens);
+    const tokenValidationResults =
+      await this.tokenValidatorProvider.validateTokens(tokens);
 
     const poolsFiltered = _.filter(pools, (pool: T) => {
       const token0Validation = tokenValidationResults.getValidationByToken(
@@ -190,7 +214,8 @@ export abstract class BaseQuoter<
 
       if (token0Invalid || token1Invalid) {
         log.info(
-          `Dropping pool ${poolToString(pool)} because token is invalid. ${pool.token0.symbol
+          `Dropping pool ${poolToString(pool)} because token is invalid. ${
+            pool.token0.symbol
           }: ${token0Validation}, ${pool.token1.symbol}: ${token1Validation}`
         );
       }

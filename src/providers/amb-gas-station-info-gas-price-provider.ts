@@ -6,8 +6,8 @@ import { log } from '../util/log';
 
 import { GasPrice, IGasPriceProvider } from './gas-price-provider';
 
-// Gas prices from ethgasstation are in x10 Gwei. Must divide by 10 to use.
-export type ETHGasStationResponse = {
+// Gas prices from ambgasstation are in x10 Gwei. Must divide by 10 to use.
+export type AMBGasStationResponse = {
   fast: number;
   fastest: number;
   safeLow: number;
@@ -21,7 +21,7 @@ export type ETHGasStationResponse = {
   fastestWait: number;
 };
 
-export class ETHGasStationInfoProvider extends IGasPriceProvider {
+export class AMBGasStationInfoProvider extends IGasPriceProvider {
   private url: string;
   constructor(url: string) {
     super();
@@ -32,7 +32,7 @@ export class ETHGasStationInfoProvider extends IGasPriceProvider {
     log.info(`About to get gas prices from gas station ${this.url}`);
     const response = await retry(
       async () => {
-        return axios.get<ETHGasStationResponse>(this.url);
+        return axios.get<AMBGasStationResponse>(this.url);
       },
       { retries: 1 }
     );
@@ -50,7 +50,7 @@ export class ETHGasStationInfoProvider extends IGasPriceProvider {
       'Gas price response from API. About to parse "fast" to big number'
     );
 
-    // Gas prices from ethgasstation are in GweiX10.
+    // Gas prices from ambgasstation are in GweiX10.
     const gasPriceWei = BigNumber.from(gasPriceResponse.fast)
       .div(BigNumber.from(10))
       .mul(BigNumber.from(10).pow(9));

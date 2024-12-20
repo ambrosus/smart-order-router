@@ -1,6 +1,6 @@
+import { ChainId } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider } from '@ethersproject/providers';
-import { ChainId } from '@airdao/sdk-core';
 
 import { TokenFeeDetector__factory } from '../types/other/factories/TokenFeeDetector__factory';
 import { TokenFeeDetector } from '../types/other/TokenFeeDetector';
@@ -40,9 +40,9 @@ const FEE_DETECTOR_ADDRESS = (chainId: ChainId) => {
 };
 
 // Amount has to be big enough to avoid rounding errors, but small enough that
-// most v2 pools will have at least this many token units
+// most classic pools will have at least this many token units
 // 100000 is the smallest number that avoids rounding errors in bps terms
-// 10000 was not sufficient due to rounding errors for rebase token (e.g. stETH)
+// 10000 was not sufficient due to rounding errors for rebase token (e.g. stAMB)
 const AMOUNT_TO_FLASH_BORROW = '100000';
 // 1M gas limit per validate call, should cover most swap cases
 const GAS_LIMIT_PER_VALIDATE = 1_000_000;

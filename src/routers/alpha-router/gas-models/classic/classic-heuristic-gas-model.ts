@@ -1,17 +1,17 @@
+import { Pair } from '@airdao/astra-classic-sdk';
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Token } from '@airdao/sdk-core';
-import { Pair } from '@airdao/v2-sdk';
 import _ from 'lodash';
 
+import { IClassicPoolProvider } from '../../../../providers/classic/pool-provider';
 import { ProviderConfig } from '../../../../providers/provider';
-import { IV2PoolProvider } from '../../../../providers/v2/pool-provider';
 import { log, WRAPPED_NATIVE_CURRENCY } from '../../../../util';
 import { CurrencyAmount } from '../../../../util/amounts';
-import { V2RouteWithValidQuote } from '../../entities/route-with-valid-quote';
+import { ClassicRouteWithValidQuote } from '../../entities/route-with-valid-quote';
 import {
-  BuildV2GasModelFactoryType,
+  BuildClassicGasModelFactoryType,
+  IClassicGasModelFactory,
   IGasModel,
-  IV2GasModelFactory,
   usdGasTokensByChain,
 } from '../gas-model';
 
@@ -22,7 +22,7 @@ export const BASE_SWAP_COST = BigNumber.from(135000); // 115000, bumped up by 20
 export const COST_PER_EXTRA_HOP = BigNumber.from(50000); // 20000, bumped up by 30_000 @eric 7/8/2022
 
 /**
- * Computes a gas estimate for a V2 swap using heuristics.
+ * Computes a gas estimate for a Classic swap using heuristics.
  * Considers number of hops in the route and the typical base cost for a swap.
  *
  * We compute gas estimates off-chain because
@@ -30,15 +30,15 @@ export const COST_PER_EXTRA_HOP = BigNumber.from(50000); // 20000, bumped up by 
  *     the full balance token being swapped, and approvals.
  *  2/ Tracking gas used using a wrapper contract is not accurate with Multicall
  *     due to EIP-2929. We would have to make a request for every swap we wanted to estimate.
- *  3/ For V2 we simulate all our swaps off-chain so have no way to track gas used.
+ *  3/ For Classic we simulate all our swaps off-chain so have no way to track gas used.
  *
  * Note, certain tokens e.g. rebasing/fee-on-transfer, may incur higher gas costs than
  * what we estimate here. This is because they run extra logic on token transfer.
  *
  * @export
- * @class V2HeuristicGasModelFactory
+ * @class ClassicHeuristicGasModelFactory
  */
-export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
+export class ClassicHeuristicGasModelFactory extends IClassicGasModelFactory {
   constructor() {
     super();
   }
@@ -49,7 +49,9 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
     poolProvider,
     token,
     providerConfig,
-  }: BuildV2GasModelFactoryType): Promise<IGasModel<V2RouteWithValidQuote>> {
+  }: BuildClassicGasModelFactoryType): Promise<
+    IGasModel<ClassicRouteWithValidQuote>
+  > {
     if (token.equals(WRAPPED_NATIVE_CURRENCY[chainId]!)) {
       const usdPool: Pair = await this.getHighestLiquidityUSDPool(
         chainId,
@@ -58,37 +60,37 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
       );
 
       return {
-        estimateGasCost: (routeWithValidQuote: V2RouteWithValidQuote) => {
-          const { gasCostInEth, gasUse } = this.estimateGas(
+        estimateGasCost: (routeWithValidQuote: ClassicRouteWithValidQuote) => {
+          const { gasCostInAmb, gasUse } = this.estimateGas(
             routeWithValidQuote,
             gasPriceWei,
             chainId,
             providerConfig
           );
 
-          const ethToken0 =
+          const ambToken0 =
             usdPool.token0.address == WRAPPED_NATIVE_CURRENCY[chainId]!.address;
 
-          const ethTokenPrice = ethToken0
+          const ambTokenPrice = ambToken0
             ? usdPool.token0Price
             : usdPool.token1Price;
 
-          const gasCostInTermsOfUSD: CurrencyAmount = ethTokenPrice.quote(
-            gasCostInEth
+          const gasCostInTermsOfUSD: CurrencyAmount = ambTokenPrice.quote(
+            gasCostInAmb
           ) as CurrencyAmount;
 
           return {
             gasEstimate: gasUse,
-            gasCostInToken: gasCostInEth,
+            gasCostInToken: gasCostInAmb,
             gasCostInUSD: gasCostInTermsOfUSD,
           };
         },
       };
     }
 
-    // If the quote token is not WETH, we convert the gas cost to be in terms of the quote token.
-    // We do this by getting the highest liquidity <token>/ETH pool.
-    const ethPoolPromise = this.getEthPool(
+    // If the quote token is not SAMB, we convert the gas cost to be in terms of the quote token.
+    // We do this by getting the highest liquidity <token>/AMB pool.
+    const ambPoolPromise = this.getAmbPool(
       chainId,
       token,
       poolProvider,
@@ -101,25 +103,25 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
       providerConfig
     );
 
-    const [ethPool, usdPool] = await Promise.all([
-      ethPoolPromise,
+    const [ambPool, usdPool] = await Promise.all([
+      ambPoolPromise,
       usdPoolPromise,
     ]);
 
-    if (!ethPool) {
+    if (!ambPool) {
       log.info(
-        'Unable to find ETH pool with the quote token to produce gas adjusted costs. Route will not account for gas.'
+        'Unable to find AMB pool with the quote token to produce gas adjusted costs. Route will not account for gas.'
       );
     }
 
     return {
-      estimateGasCost: (routeWithValidQuote: V2RouteWithValidQuote) => {
+      estimateGasCost: (routeWithValidQuote: ClassicRouteWithValidQuote) => {
         const usdToken =
           usdPool.token0.address == WRAPPED_NATIVE_CURRENCY[chainId]!.address
             ? usdPool.token1
             : usdPool.token0;
 
-        const { gasCostInEth, gasUse } = this.estimateGas(
+        const { gasCostInAmb, gasUse } = this.estimateGas(
           routeWithValidQuote,
           gasPriceWei,
           chainId,
@@ -128,7 +130,7 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
           }
         );
 
-        if (!ethPool) {
+        if (!ambPool) {
           return {
             gasEstimate: gasUse,
             gasCostInToken: CurrencyAmount.fromRawAmount(token, 0),
@@ -136,48 +138,48 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
           };
         }
 
-        const ethToken0 =
-          ethPool.token0.address == WRAPPED_NATIVE_CURRENCY[chainId]!.address;
+        const ambToken0 =
+          ambPool.token0.address == WRAPPED_NATIVE_CURRENCY[chainId]!.address;
 
-        const ethTokenPrice = ethToken0
-          ? ethPool.token0Price
-          : ethPool.token1Price;
+        const ambTokenPrice = ambToken0
+          ? ambPool.token0Price
+          : ambPool.token1Price;
 
         let gasCostInTermsOfQuoteToken: CurrencyAmount;
         try {
-          gasCostInTermsOfQuoteToken = ethTokenPrice.quote(
-            gasCostInEth
+          gasCostInTermsOfQuoteToken = ambTokenPrice.quote(
+            gasCostInAmb
           ) as CurrencyAmount;
         } catch (err) {
           log.error(
             {
-              ethTokenPriceBase: ethTokenPrice.baseCurrency,
-              ethTokenPriceQuote: ethTokenPrice.quoteCurrency,
-              gasCostInEth: gasCostInEth.currency,
+              ambTokenPriceBase: ambTokenPrice.baseCurrency,
+              ambTokenPriceQuote: ambTokenPrice.quoteCurrency,
+              gasCostInAmb: gasCostInAmb.currency,
             },
-            'Debug eth price token issue'
+            'Debug amb price token issue'
           );
           throw err;
         }
 
-        const ethToken0USDPool =
+        const ambToken0USDPool =
           usdPool.token0.address == WRAPPED_NATIVE_CURRENCY[chainId]!.address;
 
-        const ethTokenPriceUSDPool = ethToken0USDPool
+        const ambTokenPriceUSDPool = ambToken0USDPool
           ? usdPool.token0Price
           : usdPool.token1Price;
 
         let gasCostInTermsOfUSD: CurrencyAmount;
         try {
-          gasCostInTermsOfUSD = ethTokenPriceUSDPool.quote(
-            gasCostInEth
+          gasCostInTermsOfUSD = ambTokenPriceUSDPool.quote(
+            gasCostInAmb
           ) as CurrencyAmount;
         } catch (err) {
           log.error(
             {
               usdT1: usdPool.token0.symbol,
               usdT2: usdPool.token1.symbol,
-              gasCostInEthToken: gasCostInEth.currency.symbol,
+              gasCostInAmbToken: gasCostInAmb.currency.symbol,
             },
             'Failed to compute USD gas price'
           );
@@ -194,7 +196,7 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
   }
 
   private estimateGas(
-    routeWithValidQuote: V2RouteWithValidQuote,
+    routeWithValidQuote: ClassicRouteWithValidQuote,
     gasPriceWei: BigNumber,
     chainId: ChainId,
     providerConfig?: ProviderConfig
@@ -208,39 +210,39 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
 
     const totalGasCostWei = gasPriceWei.mul(gasUse);
 
-    const weth = WRAPPED_NATIVE_CURRENCY[chainId]!;
+    const samb = WRAPPED_NATIVE_CURRENCY[chainId]!;
 
-    const gasCostInEth = CurrencyAmount.fromRawAmount(
-      weth,
+    const gasCostInAmb = CurrencyAmount.fromRawAmount(
+      samb,
       totalGasCostWei.toString()
     );
 
-    return { gasCostInEth, gasUse };
+    return { gasCostInAmb, gasUse };
   }
 
-  private async getEthPool(
+  private async getAmbPool(
     chainId: ChainId,
     token: Token,
-    poolProvider: IV2PoolProvider,
+    poolProvider: IClassicPoolProvider,
     providerConfig?: ProviderConfig
   ): Promise<Pair | null> {
-    const weth = WRAPPED_NATIVE_CURRENCY[chainId]!;
+    const samb = WRAPPED_NATIVE_CURRENCY[chainId]!;
 
     const poolAccessor = await poolProvider.getPools(
-      [[weth, token]],
+      [[samb, token]],
       providerConfig
     );
-    const pool = poolAccessor.getPool(weth, token);
+    const pool = poolAccessor.getPool(samb, token);
 
     if (!pool || pool.reserve0.equalTo(0) || pool.reserve1.equalTo(0)) {
       log.error(
         {
-          weth,
+          samb,
           token,
           reserve0: pool?.reserve0.toExact(),
           reserve1: pool?.reserve1.toExact(),
         },
-        `Could not find a valid WETH pool with ${token.symbol} for computing gas costs.`
+        `Could not find a valid SAMB pool with ${token.symbol} for computing gas costs.`
       );
 
       return null;
@@ -251,7 +253,7 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
 
   private async getHighestLiquidityUSDPool(
     chainId: ChainId,
-    poolProvider: IV2PoolProvider,
+    poolProvider: IClassicPoolProvider,
     providerConfig?: ProviderConfig
   ): Promise<Pair> {
     const usdTokens = usdGasTokensByChain[chainId];
@@ -276,9 +278,9 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
     if (pools.length == 0) {
       log.error(
         { pools },
-        `Could not find a USD/WETH pool for computing gas costs.`
+        `Could not find a USD/SAMB pool for computing gas costs.`
       );
-      throw new Error(`Can't find USD/WETH pool for computing gas costs.`);
+      throw new Error(`Can't find USD/SAMB pool for computing gas costs.`);
     }
 
     const maxPool = _.maxBy(pools, (pool) => {

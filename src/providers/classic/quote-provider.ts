@@ -1,54 +1,56 @@
+import {
+  InsufficientInputAmountError,
+  InsufficientReservesError,
+} from '@airdao/astra-classic-sdk';
+import { TradeType } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { TradeType } from '@airdao/sdk-core';
-import { InsufficientInputAmountError, InsufficientReservesError } from '@airdao/v2-sdk';
 
-import { V2Route } from '../../routers/router';
+import { ClassicRoute } from '../../routers/router';
 import { CurrencyAmount } from '../../util/amounts';
 import { log } from '../../util/log';
 import { routeToString } from '../../util/routes';
 import { ProviderConfig } from '../provider';
 
 // Quotes can be null (e.g. pool did not have enough liquidity).
-export type V2AmountQuote = {
+export type ClassicAmountQuote = {
   amount: CurrencyAmount;
   quote: BigNumber | null;
 };
 
-export type V2RouteWithQuotes = [V2Route, V2AmountQuote[]];
+export type ClassicRouteWithQuotes = [ClassicRoute, ClassicAmountQuote[]];
 
-export interface IV2QuoteProvider {
+export interface IClassicQuoteProvider {
   getQuotesManyExactIn(
     amountIns: CurrencyAmount[],
-    routes: V2Route[],
+    routes: ClassicRoute[],
     providerConfig: ProviderConfig
-  ): Promise<{ routesWithQuotes: V2RouteWithQuotes[] }>;
+  ): Promise<{ routesWithQuotes: ClassicRouteWithQuotes[] }>;
 
   getQuotesManyExactOut(
     amountOuts: CurrencyAmount[],
-    routes: V2Route[],
+    routes: ClassicRoute[],
     providerConfig: ProviderConfig
-  ): Promise<{ routesWithQuotes: V2RouteWithQuotes[] }>;
+  ): Promise<{ routesWithQuotes: ClassicRouteWithQuotes[] }>;
 }
 
 /**
- * Computes quotes for V2 off-chain. Quotes are computed using the balances
+ * Computes quotes for Classic off-chain. Quotes are computed using the balances
  * of the pools within each route provided.
  *
  * @export
- * @class V2QuoteProvider
+ * @class ClassicQuoteProvider
  */
-export class V2QuoteProvider implements IV2QuoteProvider {
+export class ClassicQuoteProvider implements IClassicQuoteProvider {
   /* eslint-disable @typescript-eslint/no-empty-function */
-  constructor() {
-  }
+  constructor() {}
 
   /* eslint-enable @typescript-eslint/no-empty-function */
 
   public async getQuotesManyExactIn(
     amountIns: CurrencyAmount[],
-    routes: V2Route[],
+    routes: ClassicRoute[],
     providerConfig: ProviderConfig
-  ): Promise<{ routesWithQuotes: V2RouteWithQuotes[] }> {
+  ): Promise<{ routesWithQuotes: ClassicRouteWithQuotes[] }> {
     return this.getQuotes(
       amountIns,
       routes,
@@ -59,9 +61,9 @@ export class V2QuoteProvider implements IV2QuoteProvider {
 
   public async getQuotesManyExactOut(
     amountOuts: CurrencyAmount[],
-    routes: V2Route[],
+    routes: ClassicRoute[],
     providerConfig: ProviderConfig
-  ): Promise<{ routesWithQuotes: V2RouteWithQuotes[] }> {
+  ): Promise<{ routesWithQuotes: ClassicRouteWithQuotes[] }> {
     return this.getQuotes(
       amountOuts,
       routes,
@@ -72,15 +74,15 @@ export class V2QuoteProvider implements IV2QuoteProvider {
 
   private async getQuotes(
     amounts: CurrencyAmount[],
-    routes: V2Route[],
+    routes: ClassicRoute[],
     tradeType: TradeType,
     providerConfig: ProviderConfig
-  ): Promise<{ routesWithQuotes: V2RouteWithQuotes[] }> {
-    const routesWithQuotes: V2RouteWithQuotes[] = [];
+  ): Promise<{ routesWithQuotes: ClassicRouteWithQuotes[] }> {
+    const routesWithQuotes: ClassicRouteWithQuotes[] = [];
 
     const debugStrs: string[] = [];
     for (const route of routes) {
-      const amountQuotes: V2AmountQuote[] = [];
+      const amountQuotes: ClassicAmountQuote[] = [];
 
       let insufficientInputAmountErrorCount = 0;
       let insufficientReservesErrorCount = 0;
@@ -146,7 +148,7 @@ export class V2QuoteProvider implements IV2QuoteProvider {
     }
 
     if (debugStrs.length > 0) {
-      log.info({ debugStrs }, `Failed quotes for V2 routes`);
+      log.info({ debugStrs }, `Failed quotes for Classic routes`);
     }
 
     return {

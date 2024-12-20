@@ -1,7 +1,13 @@
+import { Pool } from '@airdao/astra-cl-sdk';
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Token } from '@airdao/sdk-core';
-import { Pool } from '@airdao/v3-sdk';
 
+import {
+  ArbitrumGasData,
+  IL2GasDataProvider,
+  OptimismGasData,
+} from '../../../providers/cl/gas-data-provider';
+import { IClassicPoolProvider } from '../../../providers/classic/pool-provider';
 import { ProviderConfig } from '../../../providers/provider';
 import {
   CUSD_CELO,
@@ -37,18 +43,12 @@ import {
   USDT_OPTIMISM_GOERLI,
   WBTC_GOERLI,
 } from '../../../providers/token-provider';
-import { IV2PoolProvider } from '../../../providers/v2/pool-provider';
-import {
-  ArbitrumGasData,
-  IL2GasDataProvider,
-  OptimismGasData,
-} from '../../../providers/v3/gas-data-provider';
 import { CurrencyAmount } from '../../../util/amounts';
 import {
+  ClassicRouteWithValidQuote,
+  CLRouteWithValidQuote,
   MixedRouteWithValidQuote,
   RouteWithValidQuote,
-  V2RouteWithValidQuote,
-  V3RouteWithValidQuote,
 } from '../entities/route-with-valid-quote';
 
 // When adding new usd gas tokens, ensure the tokens are ordered
@@ -90,25 +90,25 @@ export type BuildOnChainGasModelFactoryType = {
   pools: LiquidityCalculationPools;
   amountToken: Token;
   quoteToken: Token;
-  v2poolProvider: IV2PoolProvider;
+  classicPoolProvider: IClassicPoolProvider;
   l2GasDataProvider?:
     | IL2GasDataProvider<OptimismGasData>
     | IL2GasDataProvider<ArbitrumGasData>;
   providerConfig?: ProviderConfig;
 };
 
-export type BuildV2GasModelFactoryType = {
+export type BuildClassicGasModelFactoryType = {
   chainId: ChainId;
   gasPriceWei: BigNumber;
-  poolProvider: IV2PoolProvider;
+  poolProvider: IClassicPoolProvider;
   token: Token;
   providerConfig?: ProviderConfig;
 };
 
 export type LiquidityCalculationPools = {
   usdPool: Pool;
-  nativeQuoteTokenV3Pool: Pool | null;
-  nativeAmountTokenV3Pool: Pool | null;
+  nativeQuoteTokenCLPool: Pool | null;
+  nativeAmountTokenCLPool: Pool | null;
 };
 
 /**
@@ -119,7 +119,7 @@ export type LiquidityCalculationPools = {
  *     the full balance token being swapped, and approvals.
  *  2/ Tracking gas used using a wrapper contract is not accurate with Multicall
  *     due to EIP-2929
- *  3/ For V2 we simulate all our swaps off-chain so have no way to track gas used.
+ *  3/ For Classic we simulate all our swaps off-chain so have no way to track gas used.
  *
  * Generally these models should be optimized to return quickly by performing any
  * long running operations (like fetching external data) outside of the functions defined.
@@ -145,16 +145,18 @@ export type IGasModel<TRouteWithValidQuote extends RouteWithValidQuote> = {
  *
  * @export
  * @abstract
- * @class IV2GasModelFactory
+ * @class IClassicGasModelFactory
  */
-export abstract class IV2GasModelFactory {
+export abstract class IClassicGasModelFactory {
   public abstract buildGasModel({
     chainId,
     gasPriceWei,
     poolProvider,
     token,
     providerConfig,
-  }: BuildV2GasModelFactoryType): Promise<IGasModel<V2RouteWithValidQuote>>;
+  }: BuildClassicGasModelFactoryType): Promise<
+    IGasModel<ClassicRouteWithValidQuote>
+  >;
 }
 
 /**
@@ -175,10 +177,10 @@ export abstract class IOnChainGasModelFactory {
     pools: LiquidityCalculationPools,
     amountToken,
     quoteToken,
-    v2poolProvider: V2poolProvider,
+    classicPoolProvider: ClassicPoolProvider,
     l2GasDataProvider,
     providerConfig,
   }: BuildOnChainGasModelFactoryType): Promise<
-    IGasModel<V3RouteWithValidQuote | MixedRouteWithValidQuote>
+    IGasModel<CLRouteWithValidQuote | MixedRouteWithValidQuote>
   >;
 }

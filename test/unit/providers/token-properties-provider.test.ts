@@ -1,4 +1,4 @@
-import { ChainId, Token, WETH9 } from '@airdao/sdk-core';
+import { ChainId, Token, WETH9 } from '@airdao/astra-sdk-core';
 import NodeCache from 'node-cache';
 import sinon from 'sinon';
 import {

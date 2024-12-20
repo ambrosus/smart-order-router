@@ -1,25 +1,25 @@
-import { Token } from '@airdao/sdk-core';
+import { Token } from '@airdao/astra-sdk-core';
 
 import { log } from '../../util';
 import { ProviderConfig } from '../provider';
 
-import { IV3SubgraphProvider, V3SubgraphPool } from './subgraph-provider';
+import { CLSubgraphPool, ICLSubgraphProvider } from './subgraph-provider';
 
 /**
- * Provider for getting V3 subgraph pools that falls back to a different provider
+ * Provider for getting CL subgraph pools that falls back to a different provider
  * in the event of failure.
  *
  * @export
- * @class V3SubgraphProviderWithFallBacks
+ * @class CLSubgraphProviderWithFallBacks
  */
-export class V3SubgraphProviderWithFallBacks implements IV3SubgraphProvider {
-  constructor(private fallbacks: IV3SubgraphProvider[]) {}
+export class CLSubgraphProviderWithFallBacks implements ICLSubgraphProvider {
+  constructor(private fallbacks: ICLSubgraphProvider[]) {}
 
   public async getPools(
     tokenIn?: Token,
     tokenOut?: Token,
     providerConfig?: ProviderConfig
-  ): Promise<V3SubgraphPool[]> {
+  ): Promise<CLSubgraphPool[]> {
     for (let i = 0; i < this.fallbacks.length; i++) {
       const provider = this.fallbacks[i]!;
       try {
@@ -30,7 +30,7 @@ export class V3SubgraphProviderWithFallBacks implements IV3SubgraphProvider {
         );
         return pools;
       } catch (err) {
-        log.info(`Failed to get subgraph pools for V3 from fallback #${i}`);
+        log.info(`Failed to get subgraph pools for CL from fallback #${i}`);
       }
     }
 

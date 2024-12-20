@@ -1,10 +1,10 @@
+import { ChainId } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider } from '@ethersproject/providers';
-import { ChainId } from '@airdao/sdk-core';
 
 import { GasDataArbitrum__factory } from '../../types/other/factories/GasDataArbitrum__factory';
 import { GasPriceOracle__factory } from '../../types/other/factories/GasPriceOracle__factory';
-import { ARB_GASINFO_ADDRESS, log, OVM_GASPRICE_ADDRESS, } from '../../util';
+import { ARB_GASINFO_ADDRESS, log, OVM_GASPRICE_ADDRESS } from '../../util';
 import { IMulticallProvider } from '../multicall-provider';
 
 /**
@@ -29,7 +29,8 @@ export type OptimismGasData = {
 };
 
 export class OptimismGasDataProvider
-  implements IL2GasDataProvider<OptimismGasData> {
+  implements IL2GasDataProvider<OptimismGasData>
+{
   protected gasOracleAddress: string;
 
   constructor(
@@ -101,7 +102,8 @@ export type ArbitrumGasData = {
 };
 
 export class ArbitrumGasDataProvider
-  implements IL2GasDataProvider<ArbitrumGasData> {
+  implements IL2GasDataProvider<ArbitrumGasData>
+{
   protected gasFeesAddress: string;
   protected blockNumberOverride: number | Promise<number> | undefined;
 

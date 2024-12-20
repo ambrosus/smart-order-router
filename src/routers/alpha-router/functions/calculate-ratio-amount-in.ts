@@ -1,4 +1,4 @@
-import { Fraction } from '@airdao/sdk-core';
+import { Fraction } from '@airdao/astra-sdk-core';
 
 import { CurrencyAmount } from '../../../util/amounts';
 

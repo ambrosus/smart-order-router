@@ -1,11 +1,16 @@
 /// <reference types="./types/bunyan-debug-stream" />
+import { MethodParameters } from '@airdao/astra-cl-sdk';
+import {
+  ChainId,
+  Currency,
+  CurrencyAmount,
+  Token,
+} from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { Command, flags } from '@oclif/command';
 import { ParserOutput } from '@oclif/parser/lib/parse';
 import DEFAULT_TOKEN_LIST from '@uniswap/default-token-list';
-import { ChainId, Currency, CurrencyAmount, Token } from '@airdao/sdk-core';
-import { MethodParameters } from '@airdao/v3-sdk';
 import bunyan, { default as Logger } from 'bunyan';
 import bunyanDebugStream from 'bunyan-debug-stream';
 import _ from 'lodash';
@@ -13,22 +18,26 @@ import NodeCache from 'node-cache';
 
 import {
   AlphaRouter,
+  AmbEstimateGasSimulator,
+  AstraMulticallProvider,
+  CachingCLPoolProvider,
   CachingGasStationProvider,
   CachingTokenListProvider,
   CachingTokenProviderWithFallback,
-  CachingV3PoolProvider,
   CHAIN_IDS_LIST,
+  ClassicPoolProvider,
+  CLPoolProvider,
+  CLRouteWithValidQuote,
   EIP1559GasPriceProvider,
-  EthEstimateGasSimulator,
   FallbackTenderlySimulator,
   GasPrice,
+  ICLPoolProvider,
   ID_TO_CHAIN_ID,
   ID_TO_NETWORK_NAME,
   ID_TO_PROVIDER,
   IRouter,
   ISwapToRatio,
   ITokenProvider,
-  IV3PoolProvider,
   LegacyRouter,
   MetricLogger,
   NodeJSCache,
@@ -41,10 +50,6 @@ import {
   TenderlySimulator,
   TokenPropertiesProvider,
   TokenProvider,
-  UniswapMulticallProvider,
-  V2PoolProvider,
-  V3PoolProvider,
-  V3RouteWithValidQuote,
 } from '../src';
 import { LegacyGasPriceProvider } from '../src/providers/legacy-gas-price-provider';
 import { OnChainGasPriceProvider } from '../src/providers/on-chain-gas-price-provider';
@@ -123,16 +128,16 @@ export abstract class BaseCommand extends Command {
   private _router: IRouter<any> | null = null;
   private _swapToRatioRouter: ISwapToRatio<any, any> | null = null;
   private _tokenProvider: ITokenProvider | null = null;
-  private _poolProvider: IV3PoolProvider | null = null;
+  private _poolProvider: ICLPoolProvider | null = null;
   private _blockNumber: number | null = null;
-  private _multicall2Provider: UniswapMulticallProvider | null = null;
+  private _multicall2Provider: AstraMulticallProvider | null = null;
 
   get logger() {
     return this._log
       ? this._log
       : bunyan.createLogger({
-        name: 'Default Logger',
-      });
+          name: 'Default Logger',
+        });
   }
 
   get router() {
@@ -196,25 +201,25 @@ export abstract class BaseCommand extends Command {
     // initialize logger
     const logLevel = debug || debugJSON ? bunyan.DEBUG : bunyan.INFO;
     this._log = bunyan.createLogger({
-      name: 'Uniswap Smart Order Router',
+      name: 'Astra Smart Order Router',
       serializers: bunyan.stdSerializers,
       level: logLevel,
       streams: debugJSON
         ? undefined
         : [
-          {
-            level: logLevel,
-            type: 'stream',
-            stream: bunyanDebugStream({
-              basepath: __dirname,
-              forceColor: false,
-              showDate: false,
-              showPid: false,
-              showLoggerName: false,
-              showLevel: !!debug,
-            }),
-          },
-        ],
+            {
+              level: logLevel,
+              type: 'stream',
+              stream: bunyanDebugStream({
+                basepath: __dirname,
+                forceColor: false,
+                showDate: false,
+                showPid: false,
+                showLoggerName: false,
+                showLevel: !!debug,
+              }),
+            },
+          ],
     });
 
     if (debug || debugJSON) {
@@ -252,9 +257,9 @@ export abstract class BaseCommand extends Command {
       );
     }
 
-    const multicall2Provider = new UniswapMulticallProvider(chainId, provider);
+    const multicall2Provider = new AstraMulticallProvider(chainId, provider);
     this._multicall2Provider = multicall2Provider;
-    this._poolProvider = new V3PoolProvider(chainId, multicall2Provider);
+    this._poolProvider = new CLPoolProvider(chainId, multicall2Provider);
 
     // initialize tokenProvider
     const tokenProviderOnChain = new TokenProvider(chainId, multicall2Provider);
@@ -269,7 +274,7 @@ export abstract class BaseCommand extends Command {
       this._router = new LegacyRouter({
         chainId,
         multicall2Provider,
-        poolProvider: new V3PoolProvider(chainId, multicall2Provider),
+        poolProvider: new CLPoolProvider(chainId, multicall2Provider),
         quoteProvider: new OnChainQuoteProvider(
           chainId,
           provider,
@@ -282,21 +287,22 @@ export abstract class BaseCommand extends Command {
         new NodeCache({ stdTTL: 15, useClones: true })
       );
 
-      const v3PoolProvider = new CachingV3PoolProvider(
+      const clPoolProvider = new CachingCLPoolProvider(
         chainId,
-        new V3PoolProvider(chainId, multicall2Provider),
+        new CLPoolProvider(chainId, multicall2Provider),
         new NodeJSCache(new NodeCache({ stdTTL: 360, useClones: false }))
       );
-      const tokenFeeFetcher = new OnChainTokenFeeFetcher(
-        chainId,
-        provider
-      )
+      const tokenFeeFetcher = new OnChainTokenFeeFetcher(chainId, provider);
       const tokenPropertiesProvider = new TokenPropertiesProvider(
         chainId,
         new NodeJSCache(new NodeCache({ stdTTL: 360, useClones: false })),
         tokenFeeFetcher
-      )
-      const v2PoolProvider = new V2PoolProvider(chainId, multicall2Provider, tokenPropertiesProvider);
+      );
+      const classicPoolProvider = new ClassicPoolProvider(
+        chainId,
+        multicall2Provider,
+        tokenPropertiesProvider
+      );
 
       const portionProvider = new PortionProvider();
       const tenderlySimulator = new TenderlySimulator(
@@ -305,18 +311,18 @@ export abstract class BaseCommand extends Command {
         process.env.TENDERLY_USER!,
         process.env.TENDERLY_PROJECT!,
         process.env.TENDERLY_ACCESS_KEY!,
-        v2PoolProvider,
-        v3PoolProvider,
+        classicPoolProvider,
+        clPoolProvider,
         provider,
         portionProvider,
         { [ChainId.ARBITRUM_ONE]: 1 }
       );
 
-      const ethEstimateGasSimulator = new EthEstimateGasSimulator(
+      const ambEstimateGasSimulator = new AmbEstimateGasSimulator(
         chainId,
         provider,
-        v2PoolProvider,
-        v3PoolProvider,
+        classicPoolProvider,
+        clPoolProvider,
         portionProvider
       );
 
@@ -325,7 +331,7 @@ export abstract class BaseCommand extends Command {
         provider,
         portionProvider,
         tenderlySimulator,
-        ethEstimateGasSimulator
+        ambEstimateGasSimulator
       );
 
       const router = new AlphaRouter({
@@ -394,11 +400,11 @@ export abstract class BaseCommand extends Command {
       simulationStatus: simulationStatus,
     });
 
-    const v3Routes: V3RouteWithValidQuote[] =
-      routeAmounts as V3RouteWithValidQuote[];
+    const clRoutes: CLRouteWithValidQuote[] =
+      routeAmounts as CLRouteWithValidQuote[];
     let total = BigNumber.from(0);
-    for (let i = 0; i < v3Routes.length; i++) {
-      const route = v3Routes[i]!;
+    for (let i = 0; i < clRoutes.length; i++) {
+      const route = clRoutes[i]!;
       const tick = BigNumber.from(
         Math.max(1, _.sum(route.initializedTicksCrossedList))
       );

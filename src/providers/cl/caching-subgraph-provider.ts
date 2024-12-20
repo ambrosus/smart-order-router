@@ -1,30 +1,30 @@
-import { ChainId } from '@airdao/sdk-core';
+import { ChainId } from '@airdao/astra-sdk-core';
 
 import { ICache } from './../cache';
-import { IV3SubgraphProvider, V3SubgraphPool } from './subgraph-provider';
+import { CLSubgraphPool, ICLSubgraphProvider } from './subgraph-provider';
 
 /**
- * Provider for getting V3 pools, with functionality for caching the results.
+ * Provider for getting CL pools, with functionality for caching the results.
  *
  * @export
- * @class CachingV3SubgraphProvider
+ * @class CachingCLSubgraphProvider
  */
-export class CachingV3SubgraphProvider implements IV3SubgraphProvider {
+export class CachingCLSubgraphProvider implements ICLSubgraphProvider {
   private SUBGRAPH_KEY = (chainId: ChainId) => `subgraph-pools-${chainId}`;
 
   /**
-   * Creates an instance of CachingV3SubgraphProvider.
+   * Creates an instance of CachingCLSubgraphProvider.
    * @param chainId The chain id to use.
    * @param subgraphProvider The provider to use to get the subgraph pools when not in the cache.
    * @param cache Cache instance to hold cached pools.
    */
   constructor(
     private chainId: ChainId,
-    protected subgraphProvider: IV3SubgraphProvider,
-    private cache: ICache<V3SubgraphPool[]>
+    protected subgraphProvider: ICLSubgraphProvider,
+    private cache: ICache<CLSubgraphPool[]>
   ) {}
 
-  public async getPools(): Promise<V3SubgraphPool[]> {
+  public async getPools(): Promise<CLSubgraphPool[]> {
     const cachedPools = await this.cache.get(this.SUBGRAPH_KEY(this.chainId));
 
     if (cachedPools) {

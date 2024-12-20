@@ -1,7 +1,7 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Fraction, TradeType } from '@airdao/sdk-core';
-import { Pair } from '@airdao/v2-sdk';
-import { Pool } from '@airdao/v3-sdk';
+import { ChainId, Fraction, TradeType } from '@airdao/astra-sdk-core';
+import { Pair } from '@airdao/astra-classic-sdk';
+import { Pool } from '@airdao/astra-cl-sdk';
 import JSBI from 'jsbi';
 import _ from 'lodash';
 import sinon from 'sinon';

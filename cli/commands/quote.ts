@@ -1,11 +1,18 @@
+import { Protocol } from '@airdao/astra-router-sdk';
+import { Currency, Percent, TradeType } from '@airdao/astra-sdk-core';
 import { Logger } from '@ethersproject/logger';
 import { flags } from '@oclif/command';
-import { Protocol } from '@airdao/router-sdk';
-import { Currency, Percent, TradeType } from '@airdao/sdk-core';
 import dotenv from 'dotenv';
 import _ from 'lodash';
 
-import { ID_TO_CHAIN_ID, MapWithLowerCaseKey, nativeOnChain, parseAmount, SwapRoute, SwapType, } from '../../src';
+import {
+  ID_TO_CHAIN_ID,
+  MapWithLowerCaseKey,
+  nativeOnChain,
+  parseAmount,
+  SwapRoute,
+  SwapType,
+} from '../../src';
 import { NATIVE_NAMES_BY_ID, TO_PROTOCOL } from '../../src/util';
 import { BaseCommand } from '../base-command';
 
@@ -15,7 +22,7 @@ Logger.globalLogger();
 Logger.setLogLevel(Logger.levels.DEBUG);
 
 export class Quote extends BaseCommand {
-  static description = 'Uniswap Smart Order Router CLI';
+  static description = 'Astra Smart Order Router CLI';
 
   static flags = {
     ...BaseCommand.flags,
@@ -35,7 +42,10 @@ export class Quote extends BaseCommand {
     }),
     simulate: flags.boolean({ required: false, default: false }),
     debugRouting: flags.boolean({ required: false, default: true }),
-    enableFeeOnTransferFeeFetching: flags.boolean({ required: false, default: false }),
+    enableFeeOnTransferFeeFetching: flags.boolean({
+      required: false,
+      default: false,
+    }),
   };
 
   async run() {
@@ -66,7 +76,7 @@ export class Quote extends BaseCommand {
       forceMixedRoutes,
       simulate,
       debugRouting,
-      enableFeeOnTransferFeeFetching
+      enableFeeOnTransferFeeFetching,
     } = flags;
 
     const topNSecondHopForTokenAddress = new MapWithLowerCaseKey();
@@ -75,7 +85,8 @@ export class Quote extends BaseCommand {
         const entryParts = entry.split('|');
         if (entryParts.length != 2) {
           throw new Error(
-            'flag --topNSecondHopForTokenAddressRaw must be in format tokenAddress|topN,...');
+            'flag --topNSecondHopForTokenAddressRaw must be in format tokenAddress|topN,...'
+          );
         }
         const topNForTokenAddress: number = Number(entryParts[1]!);
         topNSecondHopForTokenAddress.set(entryParts[0]!, topNForTokenAddress);
@@ -105,20 +116,20 @@ export class Quote extends BaseCommand {
     const tokenProvider = this.tokenProvider;
     const router = this.router;
 
-    // if the tokenIn str is 'ETH' or 'MATIC' or in NATIVE_NAMES_BY_ID
+    // if the tokenIn str is 'AMB' or in NATIVE_NAMES_BY_ID
     const tokenIn: Currency = NATIVE_NAMES_BY_ID[chainId]!.includes(tokenInStr)
       ? nativeOnChain(chainId)
       : (await tokenProvider.getTokens([tokenInStr])).getTokenByAddress(
-        tokenInStr
-      )!;
+          tokenInStr
+        )!;
 
     const tokenOut: Currency = NATIVE_NAMES_BY_ID[chainId]!.includes(
       tokenOutStr
     )
       ? nativeOnChain(chainId)
       : (await tokenProvider.getTokens([tokenOutStr])).getTokenByAddress(
-        tokenOutStr
-      )!;
+          tokenOutStr
+        )!;
 
     let swapRoutes: SwapRoute | null;
     if (exactIn) {
@@ -129,16 +140,16 @@ export class Quote extends BaseCommand {
         TradeType.EXACT_INPUT,
         recipient
           ? {
-            type: SwapType.UNIVERSAL_ROUTER,
-            deadlineOrPreviousBlockhash: 10000000000000,
-            recipient,
-            slippageTolerance: new Percent(5, 100),
-            simulate: simulate ? { fromAddress: recipient } : undefined,
-          }
+              type: SwapType.UNIVERSAL_ROUTER,
+              deadlineOrPreviousBlockhash: 10000000000000,
+              recipient,
+              slippageTolerance: new Percent(5, 100),
+              simulate: simulate ? { fromAddress: recipient } : undefined,
+            }
           : undefined,
         {
           blockNumber: this.blockNumber,
-          v3PoolSelection: {
+          clPoolSelection: {
             topN,
             topNTokenInOut,
             topNSecondHop,
@@ -167,15 +178,15 @@ export class Quote extends BaseCommand {
         TradeType.EXACT_OUTPUT,
         recipient
           ? {
-            type: SwapType.SWAP_ROUTER_02,
-            deadline: 100,
-            recipient,
-            slippageTolerance: new Percent(5, 10_000),
-          }
+              type: SwapType.SWAP_ROUTER_02,
+              deadline: 100,
+              recipient,
+              slippageTolerance: new Percent(5, 10_000),
+            }
           : undefined,
         {
           blockNumber: this.blockNumber - 10,
-          v3PoolSelection: {
+          clPoolSelection: {
             topN,
             topNTokenInOut,
             topNSecondHop,

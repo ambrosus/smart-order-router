@@ -1,5 +1,5 @@
-import { ChainId, Token, TradeType } from '@airdao/sdk-core';
-import { encodeSqrtRatioX96, FeeAmount, Pool } from '@airdao/v3-sdk';
+import { ChainId, Token, TradeType } from '@airdao/astra-sdk-core';
+import { encodeSqrtRatioX96, FeeAmount, Pool } from '@airdao/astra-cl-sdk';
 import _ from 'lodash';
 import sinon from 'sinon';
 import {

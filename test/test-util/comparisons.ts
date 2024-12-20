@@ -1,4 +1,4 @@
-import { Pool } from '@airdao/v3-sdk';
+import { Pool } from '@airdao/astra-cl-sdk';
 import _ from 'lodash';
 
 export const poolEquals = (p1: Pool, p2: Pool) =>

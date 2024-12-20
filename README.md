@@ -1,6 +1,6 @@
-# Uniswap Smart Order Router
+# Astra Smart Order Router
 
-This repository contains routing logic for the Uniswap V3 protocol.
+This repository contains routing logic for the Astra CL protocol.
 
 It searches for the most efficient way to swap token A for token B, considering splitting swaps across multiple routes and gas costs.
 
@@ -224,7 +224,6 @@ Total ticks crossed: 7
 ./bin/cli quote --tokenIn 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA --tokenOut 0x4200000000000000000000000000000000000006 --amount 10 --exactIn --minSplits 1 --protocols v3 --router alpha --chainId 8453
 ```
 
-
 ## Adding a new Chain
 
 The main components to complete are:
@@ -255,7 +254,7 @@ By default each `eth_call` will consume up to:
 
 These parameters should work on Infura and Alchemy by default.
 
-This total amount of gas each `eth_call` can consume is equal to the `multicallChunk` config value multiplied by the `gasLimitPerCall` config value. If you are using a node provider with a lower gas limit per `eth_call` you will need to override the default `V3QuoteProvider` with an instance that lowers the `multicallChunk` and `gasLimitPerCall` parameters such that the multiplication is below your node providers limit. Lowering these values will cause each multicall to consume less gas. See [here](https://github.com/Uniswap/smart-order-router/blob/98c58bdee9981fd9ffac9e7d7a97b18302d5f77a/src/routers/alpha-router/alpha-router.ts#L415-L416) for examples of how to set these values. Note some providers have different limits per chain.
+This total amount of gas each `eth_call` can consume is equal to the `multicallChunk` config value multiplied by the `gasLimitPerCall` config value. If you are using a node provider with a lower gas limit per `eth_call` you will need to override the default `V3QuoteProvider` with an instance that lowers the `multicallChunk` and `gasLimitPerCall` parameters such that the multiplication is below your node providers limit. Lowering these values will cause each multicall to consume less gas. See [here](https://github.com/ambrosus/smart-order-router/blob/98c58bdee9981fd9ffac9e7d7a97b18302d5f77a/src/routers/alpha-router/alpha-router.ts#L415-L416) for examples of how to set these values. Note some providers have different limits per chain.
 
 If you are running your own node, we recommend you configure start your node with a higher gas limit per call. For example, on Geth you can use the command line argument `--rpc.gascap 150000000` to raise the limit to 150m, which is enough to run the default configuration of this package.
 

@@ -84,7 +84,7 @@
         "type": "bytes"
       }
     ],
-    "name": "uniswapV2Call",
+    "name": "astraClassicCall",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

@@ -1,4 +1,4 @@
-import { ChainId, Currency, Ether } from '@airdao/sdk-core';
+import { ChainId, Currency, Ether } from '@airdao/astra-sdk-core';
 import {
   CEUR_CELO,
   CEUR_CELO_ALFAJORES,

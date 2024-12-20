@@ -1,43 +1,42 @@
-import { ChainId, Token } from '@airdao/sdk-core';
-import { Pair } from '@airdao/v2-sdk';
+import { Pair } from '@airdao/astra-classic-sdk';
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
 import { log } from '../../util/log';
 
 import { ICache } from './../cache';
 import { ProviderConfig } from './../provider';
-import { IV2PoolProvider, V2PoolAccessor } from './pool-provider';
+import { ClassicPoolAccessor, IClassicPoolProvider } from './pool-provider';
 
 /**
- * Provider for getting V2 pools, with functionality for caching the results per block.
+ * Provider for getting Classic pools, with functionality for caching the results per block.
  *
  * @export
- * @class CachingV2PoolProvider
+ * @class CachingClassicPoolProvider
  */
-export class CachingV2PoolProvider implements IV2PoolProvider {
+export class CachingClassicPoolProvider implements IClassicPoolProvider {
   private POOL_KEY = (chainId: ChainId, address: string) =>
     `pool-${chainId}-${address}`;
 
   /**
-   * Creates an instance of CachingV3PoolProvider.
+   * Creates an instance of CachingCLPoolProvider.
    * @param chainId The chain id to use.
    * @param poolProvider The provider to use to get the pools when not in the cache.
    * @param cache Cache instance to hold cached pools.
    */
   constructor(
     protected chainId: ChainId,
-    protected poolProvider: IV2PoolProvider,
-    // Cache is block aware. For V2 pools we need to use the current blocks reserves values since
+    protected poolProvider: IClassicPoolProvider,
+    // Cache is block aware. For Classic pools we need to use the current blocks reserves values since
     // we compute quotes off-chain.
     // If no block is specified in the call to getPools we just return whatever is in the cache.
     private cache: ICache<{ pair: Pair; block?: number }>
-  ) {
-  }
+  ) {}
 
   public async getPools(
     tokenPairs: [Token, Token][],
     providerConfig?: ProviderConfig
-  ): Promise<V2PoolAccessor> {
+  ): Promise<ClassicPoolAccessor> {
     const poolAddressSet: Set<string> = new Set<string>();
     const poolsToGetTokenPairs: Array<[Token, Token]> = [];
     const poolsToGetAddresses: string[] = [];
@@ -88,7 +87,7 @@ export class CachingV2PoolProvider implements IV2PoolProvider {
       },
       `Found ${
         Object.keys(poolAddressToPool).length
-      } V2 pools already in local cache for block ${blockNumber}. About to get reserves for ${
+      } Classic pools already in local cache for block ${blockNumber}. About to get reserves for ${
         poolsToGetTokenPairs.length
       } pools.`
     );

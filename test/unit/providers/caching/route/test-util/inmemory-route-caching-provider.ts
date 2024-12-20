@@ -1,5 +1,5 @@
-import { Protocol } from '@airdao/router-sdk';
-import { ChainId, Currency, CurrencyAmount, Token, TradeType } from '@airdao/sdk-core';
+import { Protocol } from '@airdao/astra-router-sdk';
+import { ChainId, Currency, CurrencyAmount, Token, TradeType } from '@airdao/astra-sdk-core';
 import { CachedRoutes, CacheMode, IRouteCachingProvider } from '../../../../../../src';
 
 export class InMemoryRouteCachingProvider extends IRouteCachingProvider {

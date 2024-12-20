@@ -1,10 +1,10 @@
-import { MaxUint256 } from '@ethersproject/constants';
-import { JsonRpcProvider } from '@ethersproject/providers';
-import { ChainId } from '@airdao/sdk-core';
+import { ChainId } from '@airdao/astra-sdk-core';
 import {
   PERMIT2_ADDRESS,
   UNIVERSAL_ROUTER_ADDRESS,
 } from '@airdao/universal-router-sdk';
+import { MaxUint256 } from '@ethersproject/constants';
+import { JsonRpcProvider } from '@ethersproject/providers';
 import axios, { AxiosRequestConfig } from 'axios';
 import { BigNumber } from 'ethers/lib/ethers';
 
@@ -24,7 +24,10 @@ import {
   initSwapRouteFromExisting,
 } from '../util/gas-factory-helpers';
 
-import { EthEstimateGasSimulator } from './eth-estimate-gas-provider';
+import { AmbEstimateGasSimulator } from './amb-estimate-gas-provider';
+import { ArbitrumGasData, OptimismGasData } from './cl/gas-data-provider';
+import { ICLPoolProvider } from './cl/pool-provider';
+import { IClassicPoolProvider } from './classic/pool-provider';
 import { IPortionProvider } from './portion-provider';
 import { ProviderConfig } from './provider';
 import {
@@ -32,9 +35,6 @@ import {
   SimulationStatus,
   Simulator,
 } from './simulation-provider';
-import { IV2PoolProvider } from './v2/pool-provider';
-import { ArbitrumGasData, OptimismGasData } from './v3/gas-data-provider';
-import { IV3PoolProvider } from './v3/pool-provider';
 
 export type TenderlyResponseUniversalRouter = {
   config: {
@@ -89,17 +89,17 @@ const DEFAULT_ESTIMATE_MULTIPLIER = 1.3;
 
 export class FallbackTenderlySimulator extends Simulator {
   private tenderlySimulator: TenderlySimulator;
-  private ethEstimateGasSimulator: EthEstimateGasSimulator;
+  private ambEstimateGasSimulator: AmbEstimateGasSimulator;
   constructor(
     chainId: ChainId,
     provider: JsonRpcProvider,
     portionProvider: IPortionProvider,
     tenderlySimulator: TenderlySimulator,
-    ethEstimateGasSimulator: EthEstimateGasSimulator
+    ambEstimateGasSimulator: AmbEstimateGasSimulator
   ) {
     super(provider, portionProvider, chainId);
     this.tenderlySimulator = tenderlySimulator;
-    this.ethEstimateGasSimulator = ethEstimateGasSimulator;
+    this.ambEstimateGasSimulator = ambEstimateGasSimulator;
   }
 
   protected async simulateTransaction(
@@ -109,7 +109,7 @@ export class FallbackTenderlySimulator extends Simulator {
     l2GasData?: ArbitrumGasData | OptimismGasData,
     providerConfig?: ProviderConfig
   ): Promise<SwapRoute> {
-    // Make call to eth estimate gas if possible
+    // Make call to amb estimate gas if possible
     // For erc20s, we must check if the token allowance is sufficient
     const inputAmount = swapRoute.trade.inputAmount;
 
@@ -128,7 +128,7 @@ export class FallbackTenderlySimulator extends Simulator {
 
       try {
         const swapRouteWithGasEstimate =
-          await this.ethEstimateGasSimulator.ethEstimateGas(
+          await this.ambEstimateGasSimulator.ambEstimateGas(
             fromAddress,
             swapOptions,
             swapRoute,
@@ -162,8 +162,8 @@ export class TenderlySimulator extends Simulator {
   private tenderlyUser: string;
   private tenderlyProject: string;
   private tenderlyAccessKey: string;
-  private v2PoolProvider: IV2PoolProvider;
-  private v3PoolProvider: IV3PoolProvider;
+  private classicPoolProvider: IClassicPoolProvider;
+  private clPoolProvider: ICLPoolProvider;
   private overrideEstimateMultiplier: { [chainId in ChainId]?: number };
   private tenderlyRequestTimeout?: number;
 
@@ -173,20 +173,20 @@ export class TenderlySimulator extends Simulator {
     tenderlyUser: string,
     tenderlyProject: string,
     tenderlyAccessKey: string,
-    v2PoolProvider: IV2PoolProvider,
-    v3PoolProvider: IV3PoolProvider,
+    classicPoolProvider: IClassicPoolProvider,
+    clPoolProvider: ICLPoolProvider,
     provider: JsonRpcProvider,
     portionProvider: IPortionProvider,
     overrideEstimateMultiplier?: { [chainId in ChainId]?: number },
-    tenderlyRequestTimeout?: number,
+    tenderlyRequestTimeout?: number
   ) {
     super(provider, portionProvider, chainId);
     this.tenderlyBaseUrl = tenderlyBaseUrl;
     this.tenderlyUser = tenderlyUser;
     this.tenderlyProject = tenderlyProject;
     this.tenderlyAccessKey = tenderlyAccessKey;
-    this.v2PoolProvider = v2PoolProvider;
-    this.v3PoolProvider = v3PoolProvider;
+    this.classicPoolProvider = classicPoolProvider;
+    this.clPoolProvider = clPoolProvider;
     this.overrideEstimateMultiplier = overrideEstimateMultiplier ?? {};
     this.tenderlyRequestTimeout = tenderlyRequestTimeout;
   }
@@ -310,9 +310,15 @@ export class TenderlySimulator extends Simulator {
         await axios.post<TenderlyResponseUniversalRouter>(url, body, opts)
       ).data;
 
-      const latencies = Date.now() - before
-      log.info(`Tenderly simulation universal router request body: ${body}, having latencies ${latencies} in milliseconds.`)
-      metric.putMetric('TenderlySimulationUniversalRouterLatencies', Date.now() - before, MetricLoggerUnit.Milliseconds);
+      const latencies = Date.now() - before;
+      log.info(
+        `Tenderly simulation universal router request body: ${body}, having latencies ${latencies} in milliseconds.`
+      );
+      metric.putMetric(
+        'TenderlySimulationUniversalRouterLatencies',
+        Date.now() - before,
+        MetricLoggerUnit.Milliseconds
+      );
 
       // Validate tenderly response body
       if (
@@ -396,15 +402,21 @@ export class TenderlySimulator extends Simulator {
         this.tenderlyProject
       );
 
-      const before = Date.now()
+      const before = Date.now();
 
       const resp = (
         await axios.post<TenderlyResponseSwapRouter02>(url, body, opts)
       ).data;
 
-      const latencies = Date.now() - before
-      log.info(`Tenderly simulation swap router02 request body: ${body}, having latencies ${latencies} in milliseconds.`)
-      metric.putMetric('TenderlySimulationSwapRouter02Latencies', latencies, MetricLoggerUnit.Milliseconds);
+      const latencies = Date.now() - before;
+      log.info(
+        `Tenderly simulation swap router02 request body: ${body}, having latencies ${latencies} in milliseconds.`
+      );
+      metric.putMetric(
+        'TenderlySimulationSwapRouter02Latencies',
+        latencies,
+        MetricLoggerUnit.Milliseconds
+      );
 
       // Validate tenderly response body
       if (
@@ -460,16 +472,16 @@ export class TenderlySimulator extends Simulator {
       chainId,
       swapRoute,
       estimatedGasUsed,
-      this.v2PoolProvider,
-      this.v3PoolProvider,
+      this.classicPoolProvider,
+      this.clPoolProvider,
       l2GasData,
       providerConfig
     );
     return {
       ...initSwapRouteFromExisting(
         swapRoute,
-        this.v2PoolProvider,
-        this.v3PoolProvider,
+        this.classicPoolProvider,
+        this.clPoolProvider,
         this.portionProvider,
         quoteGasAdjusted,
         estimatedGasUsed,

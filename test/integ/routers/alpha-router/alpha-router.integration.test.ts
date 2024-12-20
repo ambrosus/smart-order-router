@@ -4,25 +4,25 @@
 
 import { JsonRpcProvider, JsonRpcSigner } from '@ethersproject/providers';
 import { AllowanceTransfer, PermitSingle } from '@uniswap/permit2-sdk';
-import { Protocol } from '@airdao/router-sdk';
+import { Protocol } from '@airdao/astra-router-sdk';
 import {
   ChainId,
   Currency,
   CurrencyAmount,
-  Ether,
+  Amber,
   Fraction,
   Percent,
   Rounding,
   Token,
   TradeType
-} from '@airdao/sdk-core';
+} from '@airdao/astra-sdk-core';
 import {
   PERMIT2_ADDRESS,
   UNIVERSAL_ROUTER_ADDRESS as UNIVERSAL_ROUTER_ADDRESS_BY_CHAIN
 } from '@airdao/universal-router-sdk';
 import { Permit2Permit } from '@airdao/universal-router-sdk/dist/utils/inputTokens';
-import { Pair } from '@airdao/v2-sdk';
-import { encodeSqrtRatioX96, FeeAmount, Pool } from '@airdao/v3-sdk';
+import { Pair } from '@airdao/astra-classic-sdk';
+import { encodeSqrtRatioX96, FeeAmount, Pool } from '@airdao/astra-cl-sdk';
 import bunyan from 'bunyan';
 import { BigNumber, providers, Wallet } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
@@ -33,15 +33,15 @@ import NodeCache from 'node-cache';
 import {
   AlphaRouter,
   AlphaRouterConfig,
-  CachingV2PoolProvider,
-  CachingV3PoolProvider,
+  CachingClassicPoolProvider,
+  CachingCLPoolProvider,
   CEUR_CELO,
   CEUR_CELO_ALFAJORES,
   CUSD_CELO,
   CUSD_CELO_ALFAJORES,
   DAI_MAINNET,
   DAI_ON,
-  EthEstimateGasSimulator,
+  AmbEstimateGasSimulator,
   FallbackTenderlySimulator,
   ID_TO_NETWORK_NAME,
   ID_TO_PROVIDER,
@@ -63,18 +63,18 @@ import {
   TokenPropertiesProvider,
   UNI_GOERLI,
   UNI_MAINNET,
-  UniswapMulticallProvider,
+  AstraMulticallProvider,
   USDC_BNB,
   USDC_ETHEREUM_GNOSIS,
   USDC_MAINNET,
   USDC_ON,
   USDT_BNB,
   USDT_MAINNET,
-  V2_SUPPORTED,
-  V2PoolProvider,
-  V2Route,
-  V3PoolProvider,
-  V3Route,
+  CLASSIC_SUPPORTED,
+  ClassicPoolProvider,
+  ClassicRoute,
+  CLPoolProvider,
+  CLRoute,
   WBTC_GNOSIS,
   WBTC_MOONBEAM,
   WETH9,
@@ -199,7 +199,7 @@ describe('alpha router integration', () => {
   let alphaRouter: AlphaRouter;
   let customAlphaRouter: AlphaRouter;
   let feeOnTransferAlphaRouter: AlphaRouter;
-  const multicall2Provider = new UniswapMulticallProvider(
+  const multicall2Provider = new AstraMulticallProvider(
     ChainId.MAINNET,
     hardhat.provider
   );
@@ -207,7 +207,7 @@ describe('alpha router integration', () => {
   const ROUTING_CONFIG: AlphaRouterConfig = {
     // @ts-ignore[TS7053] - complaining about switch being non exhaustive
     ...DEFAULT_ROUTING_CONFIG_BY_CHAIN[ChainId.MAINNET],
-    protocols: [Protocol.V3, Protocol.V2],
+    protocols: [Protocol.CL, Protocol.Classic],
     saveTenderlySimulationIfFailed: true, // save tenderly simulation on integ-test runs, easier for debugging
   };
 
@@ -551,7 +551,7 @@ describe('alpha router integration', () => {
       alice._address,
       [parseAmount('4000', WETH9[1])],
       [
-        '0x2fEb1512183545f48f6b9C5b4EbfCaF49CfCa6F3', // WETH whale
+        '0x2fEb1512183545f48f6b9C5b4EbfCaF49CfCa6F3', // SAMB whale
       ]
     );
 
@@ -563,10 +563,10 @@ describe('alpha router integration', () => {
       ]
     );
 
-    // alice should always have 10000 ETH
-    const aliceEthBalance = await hardhat.provider.getBalance(alice._address);
-    /// Since alice is deploying the QuoterV3 contract, expect to have slightly less than 10_000 ETH but not too little
-    expect(aliceEthBalance.toBigInt()).toBeGreaterThanOrEqual(
+    // alice should always have 10000 AMB
+    const aliceAmbBalance = await hardhat.provider.getBalance(alice._address);
+    /// Since alice is deploying the QuoterV3 contract, expect to have slightly less than 10_000 AMB but not too little
+    expect(aliceAmbBalance.toBigInt()).toBeGreaterThanOrEqual(
       parseEther('9995').toBigInt()
     );
     const aliceUSDCBalance = await hardhat.getBalance(
@@ -600,9 +600,9 @@ describe('alpha router integration', () => {
     )
     expect(aliceBULLETBalance).toEqual(parseAmount('735871', BULLET))
 
-    const v3PoolProvider = new CachingV3PoolProvider(
+    const v3PoolProvider = new CachingCLPoolProvider(
       ChainId.MAINNET,
-      new V3PoolProvider(ChainId.MAINNET, multicall2Provider),
+      new CLPoolProvider(ChainId.MAINNET, multicall2Provider),
       new NodeJSCache(new NodeCache({ stdTTL: 360, useClones: false }))
     );
     const tokenFeeFetcher = new OnChainTokenFeeFetcher(
@@ -614,19 +614,19 @@ describe('alpha router integration', () => {
       new NodeJSCache(new NodeCache({ stdTTL: 360, useClones: false })),
       tokenFeeFetcher
     )
-    const v2PoolProvider = new V2PoolProvider(
+    const v2PoolProvider = new ClassicPoolProvider(
       ChainId.MAINNET,
       multicall2Provider,
       tokenPropertiesProvider
     );
-    const cachingV2PoolProvider = new CachingV2PoolProvider(
+    const cachingV2PoolProvider = new CachingClassicPoolProvider(
       ChainId.MAINNET,
       v2PoolProvider,
       new NodeJSCache(new NodeCache({ stdTTL: 360, useClones: false }))
     )
 
     const portionProvider = new PortionProvider();
-    const ethEstimateGasSimulator = new EthEstimateGasSimulator(
+    const ethEstimateGasSimulator = new AmbEstimateGasSimulator(
       ChainId.MAINNET,
       hardhat.providers[0]!,
       v2PoolProvider,
@@ -2614,10 +2614,10 @@ describe('alpha router integration', () => {
                   expect(methodParameters).toBeDefined();
 
                   for (const r of route) {
-                    expect(r.route).toBeInstanceOf(V2Route)
-                    const tokenIn = (r.route as V2Route).input
-                    const tokenOut = (r.route as V2Route).output
-                    const pools = (r.route as V2Route).pairs
+                    expect(r.route).toBeInstanceOf(ClassicRoute)
+                    const tokenIn = (r.route as ClassicRoute).input
+                    const tokenOut = (r.route as ClassicRoute).output
+                    const pools = (r.route as ClassicRoute).pairs
 
                     for (const pool of pools) {
                       if (enableFeeOnTransferFeeFetching) {
@@ -2919,7 +2919,7 @@ describe('alpha router integration', () => {
 });
 
 describe('external class tests', () => {
-  const multicall2Provider = new UniswapMulticallProvider(
+  const multicall2Provider = new AstraMulticallProvider(
     ChainId.MAINNET,
     hardhat.provider
   );
@@ -2985,9 +2985,9 @@ describe('external class tests', () => {
       CurrencyAmount.fromRawAmount(token1, 1),
       CurrencyAmount.fromRawAmount(token1, 2),
     ];
-    const v3Route = new V3Route([pool_0_1], token0, token1);
-    const v3Route_2 = new V3Route([pool_0_1, pool_1_2], token0, token2);
-    const v2route = new V2Route([pair_0_1], token0, token1);
+    const v3Route = new CLRoute([pool_0_1], token0, token1);
+    const v3Route_2 = new CLRoute([pool_0_1, pool_1_2], token0, token2);
+    const v2route = new ClassicRoute([pair_0_1], token0, token1);
     const mixedRoute = new MixedRoute([pool_0_1], token0, token1);
     const routes_v3_mixed = [v3Route, mixedRoute];
     const routes_v2_mixed = [v2route, mixedRoute];
@@ -3011,27 +3011,27 @@ describe('external class tests', () => {
       /// however, we expect this to fail in case it is called somehow w/o type checking
       onChainQuoteProvider.getQuotesManyExactOut(
         amountOuts,
-        routes_v3_v2_mixed as unknown as V3Route[]
+        routes_v3_v2_mixed as unknown as CLRoute[]
       )
     ).rejects.toThrow();
 
     await expect(
       onChainQuoteProvider.getQuotesManyExactOut(
         amountOuts,
-        routes_v2_mixed as unknown as V3Route[]
+        routes_v2_mixed as unknown as CLRoute[]
       )
     ).rejects.toThrow();
 
     await expect(
       onChainQuoteProvider.getQuotesManyExactOut(amountOuts, [
         mixedRoute,
-      ] as unknown as V3Route[])
+      ] as unknown as CLRoute[])
     ).rejects.toThrow();
 
     await expect(
       onChainQuoteProvider.getQuotesManyExactOut(amountOuts, [
         v2route,
-      ] as unknown as V3Route[])
+      ] as unknown as CLRoute[])
     ).rejects.toThrow();
 
     /// ExactIn passing tests
@@ -3110,14 +3110,14 @@ describe('quote for other networks', () => {
           const chainProvider = ID_TO_PROVIDER(chain);
           const provider = new JsonRpcProvider(chainProvider, chain);
 
-          const multicall2Provider = new UniswapMulticallProvider(
+          const multicall2Provider = new AstraMulticallProvider(
             chain,
             provider
           );
 
-          const v3PoolProvider = new CachingV3PoolProvider(
+          const v3PoolProvider = new CachingCLPoolProvider(
             chain,
-            new V3PoolProvider(chain, multicall2Provider),
+            new CLPoolProvider(chain, multicall2Provider),
             new NodeJSCache(new NodeCache({ stdTTL: 360, useClones: false }))
           );
           const tokenFeeFetcher = new OnChainTokenFeeFetcher(
@@ -3129,10 +3129,10 @@ describe('quote for other networks', () => {
             new NodeJSCache(new NodeCache({ stdTTL: 360, useClones: false })),
             tokenFeeFetcher
           )
-          const v2PoolProvider = new V2PoolProvider(chain, multicall2Provider, tokenPropertiesProvider);
+          const v2PoolProvider = new ClassicPoolProvider(chain, multicall2Provider, tokenPropertiesProvider);
 
           const portionProvider = new PortionProvider();
-          const ethEstimateGasSimulator = new EthEstimateGasSimulator(
+          const ethEstimateGasSimulator = new AmbEstimateGasSimulator(
             chain,
             provider,
             v2PoolProvider,
@@ -3308,7 +3308,7 @@ describe('quote for other networks', () => {
             expect(swap).not.toBeNull();
           });
 
-          if (!V2_SUPPORTED.includes(chain)) {
+          if (!CLASSIC_SUPPORTED.includes(chain)) {
             it(`is null when considering MIXED on non supported chains for exactInput & exactOutput`, async () => {
               const tokenIn = erc1;
               const tokenOut = erc2;

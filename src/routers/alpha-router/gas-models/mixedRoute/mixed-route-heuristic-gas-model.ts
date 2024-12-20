@@ -1,8 +1,8 @@
+import { Pool } from '@airdao/astra-cl-sdk';
+import { Pair } from '@airdao/astra-classic-sdk';
+import { partitionMixedRouteByProtocol } from '@airdao/astra-router-sdk';
+import { ChainId } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { partitionMixedRouteByProtocol } from '@airdao/router-sdk';
-import { ChainId } from '@airdao/sdk-core';
-import { Pair } from '@airdao/v2-sdk';
-import { Pool } from '@airdao/v3-sdk';
 import JSBI from 'jsbi';
 import _ from 'lodash';
 
@@ -10,23 +10,23 @@ import { WRAPPED_NATIVE_CURRENCY } from '../../../..';
 import { ProviderConfig } from '../../../../providers/provider';
 import { log } from '../../../../util';
 import { CurrencyAmount } from '../../../../util/amounts';
-import { getV2NativePool } from '../../../../util/gas-factory-helpers';
+import { getClassicNativePool } from '../../../../util/gas-factory-helpers';
 import { MixedRouteWithValidQuote } from '../../entities/route-with-valid-quote';
-import {
-  BuildOnChainGasModelFactoryType,
-  IGasModel,
-  IOnChainGasModelFactory,
-} from '../gas-model';
-import {
-  BASE_SWAP_COST as BASE_SWAP_COST_V2,
-  COST_PER_EXTRA_HOP as COST_PER_EXTRA_HOP_V2,
-} from '../v2/v2-heuristic-gas-model';
 import {
   BASE_SWAP_COST,
   COST_PER_HOP,
   COST_PER_INIT_TICK,
   COST_PER_UNINIT_TICK,
-} from '../v3/gas-costs';
+} from '../cl/gas-costs';
+import {
+  BASE_SWAP_COST as BASE_SWAP_COST_CLASSIC,
+  COST_PER_EXTRA_HOP as COST_PER_EXTRA_HOP_CLASSIC,
+} from '../classic/classic-heuristic-gas-model';
+import {
+  BuildOnChainGasModelFactoryType,
+  IGasModel,
+  IOnChainGasModelFactory,
+} from '../gas-model';
 
 /**
  * Computes a gas estimate for a mixed route swap using heuristics.
@@ -41,7 +41,7 @@ import {
  *     the full balance token being swapped, and approvals.
  *  2/ Tracking gas used using a wrapper contract is not accurate with Multicall
  *     due to EIP-2929. We would have to make a request for every swap we wanted to estimate.
- *  3/ For V2 we simulate all our swaps off-chain so have no way to track gas used.
+ *  3/ For CL we simulate all our swaps off-chain so have no way to track gas used.
  *
  * @export
  * @class MixedRouteHeuristicGasModelFactory
@@ -56,14 +56,14 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory 
     gasPriceWei,
     pools,
     quoteToken,
-    v2poolProvider: V2poolProvider,
+    classicPoolProvider: ClassicPoolProvider,
     providerConfig,
   }: BuildOnChainGasModelFactoryType): Promise<
     IGasModel<MixedRouteWithValidQuote>
   > {
     const usdPool: Pool = pools.usdPool;
 
-    // If our quote token is WETH, we don't need to convert our gas use to be in terms
+    // If our quote token is SAMB, we don't need to convert our gas use to be in terms
     // of the quote token in order to produce a gas adjusted amount.
     // We do return a gas use in USD however, so we still convert to usd.
     const nativeCurrency = WRAPPED_NATIVE_CURRENCY[chainId]!;
@@ -105,15 +105,15 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory 
     }
 
     // If the quote token is not in the native currency, we convert the gas cost to be in terms of the quote token.
-    // We do this by getting the highest liquidity <quoteToken>/<nativeCurrency> pool. eg. <quoteToken>/ETH pool.
-    const nativeV3Pool: Pool | null = pools.nativeQuoteTokenV3Pool;
+    // We do this by getting the highest liquidity <quoteToken>/<nativeCurrency> pool. eg. <quoteToken>/AMB pool.
+    const nativeCLPool: Pool | null = pools.nativeQuoteTokenCLPool;
 
-    let nativeV2Pool: Pair | null;
-    if (V2poolProvider) {
+    let nativeClassicPool: Pair | null;
+    if (ClassicPoolProvider) {
       /// MixedRoutes
-      nativeV2Pool = await getV2NativePool(
+      nativeClassicPool = await getClassicNativePool(
         quoteToken,
-        V2poolProvider,
+        ClassicPoolProvider,
         providerConfig
       );
     }
@@ -137,7 +137,7 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory 
         providerConfig
       );
 
-      if (!nativeV3Pool && !nativeV2Pool) {
+      if (!nativeCLPool && !nativeClassicPool) {
         log.info(
           `Unable to find ${nativeCurrency.symbol} pool with the quote token, ${quoteToken.symbol} to produce gas adjusted costs. Route will not account for gas.`
         );
@@ -148,13 +148,13 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory 
         };
       }
 
-      /// we will use nativeV2Pool for fallback if nativeV3 does not exist or has 0 liquidity
-      /// can use ! here because we return above if v3Pool and v2Pool are null
+      /// we will use nativeClassicPool for fallback if nativeCL does not exist or has 0 liquidity
+      /// can use ! here because we return above if clPool and classicPool are null
       const nativePool =
-        (!nativeV3Pool || JSBI.equal(nativeV3Pool.liquidity, JSBI.BigInt(0))) &&
-        nativeV2Pool
-          ? nativeV2Pool
-          : nativeV3Pool!;
+        (!nativeCLPool || JSBI.equal(nativeCLPool.liquidity, JSBI.BigInt(0))) &&
+        nativeClassicPool
+          ? nativeClassicPool
+          : nativeCLPool!;
 
       const token0 = nativePool.token0.address == nativeCurrency.address;
 
@@ -174,9 +174,9 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory 
           {
             nativeTokenPriceBase: nativeTokenPrice.baseCurrency,
             nativeTokenPriceQuote: nativeTokenPrice.quoteCurrency,
-            gasCostInEth: totalGasCostNativeCurrency.currency,
+            gasCostInAmb: totalGasCostNativeCurrency.currency,
           },
-          'Debug eth price token issue'
+          'Debug amb price token issue'
         );
         throw err;
       }
@@ -228,7 +228,7 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory 
       Math.max(1, _.sum(routeWithValidQuote.initializedTicksCrossedList))
     );
     /**
-     * Since we must make a separate call to multicall for each v3 and v2 section, we will have to
+     * Since we must make a separate call to multicall for each CL and Classic section, we will have to
      * add the BASE_SWAP_COST to each section.
      */
     let baseGasUse = BigNumber.from(0);
@@ -241,10 +241,10 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory 
         baseGasUse = baseGasUse.add(BASE_SWAP_COST(chainId));
         baseGasUse = baseGasUse.add(COST_PER_HOP(chainId).mul(section.length));
       } else if (section.every((pool) => pool instanceof Pair)) {
-        baseGasUse = baseGasUse.add(BASE_SWAP_COST_V2);
+        baseGasUse = baseGasUse.add(BASE_SWAP_COST_CLASSIC);
         baseGasUse = baseGasUse.add(
-          /// same behavior in v2 heuristic gas model factory
-          COST_PER_EXTRA_HOP_V2.mul(section.length - 1)
+          /// same behavior in Classic heuristic gas model factory
+          COST_PER_EXTRA_HOP_CLASSIC.mul(section.length - 1)
         );
       }
     });

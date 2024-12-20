@@ -1,5 +1,5 @@
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Token } from '@airdao/sdk-core';
 
 import { log, metric, MetricLoggerUnit } from '../util';
 

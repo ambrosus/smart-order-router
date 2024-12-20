@@ -1,11 +1,10 @@
+import { ChainId } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider } from '@ethersproject/providers';
-import { ChainId } from '@airdao/sdk-core';
 import _ from 'lodash';
 import stats from 'stats-lite';
 
-import { UniswapInterfaceMulticall } from '../types/v3/UniswapInterfaceMulticall';
-import { UniswapInterfaceMulticall__factory } from '../types/v3/factories/UniswapInterfaceMulticall__factory';
+import { AstraInterfaceMulticall, AstraInterfaceMulticall__factory } from '../types/cl';
 import { UNISWAP_MULTICALL_ADDRESSES } from '../util/addresses';
 import { log } from '../util/log';
 
@@ -17,7 +16,7 @@ import {
   Result,
 } from './multicall-provider';
 
-export type UniswapMulticallConfig = {
+export type AstraMulticallConfig = {
   gasLimitPerCallOverride?: number;
 };
 
@@ -30,8 +29,8 @@ export type UniswapMulticallConfig = {
  * @export
  * @class UniswapMulticallProvider
  */
-export class UniswapMulticallProvider extends IMulticallProvider<UniswapMulticallConfig> {
-  private multicallContract: UniswapInterfaceMulticall;
+export class AstraMulticallProvider extends IMulticallProvider<AstraMulticallConfig> {
+  private multicallContract: AstraInterfaceMulticall;
 
   constructor(
     protected chainId: ChainId,
@@ -47,7 +46,7 @@ export class UniswapMulticallProvider extends IMulticallProvider<UniswapMultical
       );
     }
 
-    this.multicallContract = UniswapInterfaceMulticall__factory.connect(
+    this.multicallContract = AstraInterfaceMulticall__factory.connect(
       multicallAddress,
       this.provider
     );
@@ -137,7 +136,7 @@ export class UniswapMulticallProvider extends IMulticallProvider<UniswapMultical
   >(
     params: CallSameFunctionOnContractWithMultipleParams<
       TFunctionParams,
-      UniswapMulticallConfig
+      AstraMulticallConfig
     >
   ): Promise<{
     blockNumber: BigNumber;
@@ -228,7 +227,7 @@ export class UniswapMulticallProvider extends IMulticallProvider<UniswapMultical
   >(
     params: CallMultipleFunctionsOnSameContractParams<
       TFunctionParams,
-      UniswapMulticallConfig
+      AstraMulticallConfig
     >
   ): Promise<{
     blockNumber: BigNumber;

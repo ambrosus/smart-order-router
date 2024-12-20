@@ -1,5 +1,5 @@
-import { ChainId, Token } from '@airdao/sdk-core';
-import { Pair } from '@airdao/v2-sdk';
+import { Pair } from '@airdao/astra-classic-sdk';
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
 import { WRAPPED_NATIVE_CURRENCY } from '../../util/chains';
@@ -8,10 +8,13 @@ import {
   DAI_MAINNET,
   USDC_MAINNET,
   USDT_MAINNET,
-  WBTC_MAINNET
+  WBTC_MAINNET,
 } from '../token-provider';
 
-import { IV2SubgraphProvider, V2SubgraphPool } from './subgraph-provider';
+import {
+  ClassicSubgraphPool,
+  IClassicSubgraphProvider,
+} from './subgraph-provider';
 
 type ChainTokenList = {
   readonly [chainId in ChainId]: Token[];
@@ -23,7 +26,7 @@ const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
     DAI_MAINNET,
     USDC_MAINNET,
     USDT_MAINNET,
-    WBTC_MAINNET
+    WBTC_MAINNET,
   ],
   [ChainId.GOERLI]: [WRAPPED_NATIVE_CURRENCY[ChainId.GOERLI]!],
   [ChainId.SEPOLIA]: [WRAPPED_NATIVE_CURRENCY[ChainId.SEPOLIA]!],
@@ -42,7 +45,7 @@ const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
   [ChainId.AVALANCHE]: [],
   [ChainId.BASE_GOERLI]: [],
   [ChainId.BASE]: [],
-  [ChainId.AIRDAO_TEST]: []
+  [ChainId.AIRDAO_TEST]: [],
 };
 
 /**
@@ -55,16 +58,16 @@ const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
  * Useful for instances where other data sources are unavailable. E.g. subgraph not available.
  *
  * @export
- * @class StaticV2SubgraphProvider
+ * @class StaticClassicSubgraphProvider
  */
-export class StaticV2SubgraphProvider implements IV2SubgraphProvider {
+export class StaticClassicSubgraphProvider implements IClassicSubgraphProvider {
   constructor(private chainId: ChainId) {}
 
   public async getPools(
     tokenIn?: Token,
     tokenOut?: Token
-  ): Promise<V2SubgraphPool[]> {
-    log.info('In static subgraph provider for V2');
+  ): Promise<ClassicSubgraphPool[]> {
+    log.info('In static subgraph provider for Classic');
     const bases = BASES_TO_CHECK_TRADES_AGAINST[this.chainId];
 
     const basePairs: [Token, Token][] = _.flatMap(
@@ -92,7 +95,7 @@ export class StaticV2SubgraphProvider implements IV2SubgraphProvider {
 
     const poolAddressSet = new Set<string>();
 
-    const subgraphPools: V2SubgraphPool[] = _(pairs)
+    const subgraphPools: ClassicSubgraphPool[] = _(pairs)
       .map(([tokenA, tokenB]) => {
         const poolAddress = Pair.getAddress(tokenA, tokenB);
 
@@ -109,14 +112,14 @@ export class StaticV2SubgraphProvider implements IV2SubgraphProvider {
           id: poolAddress,
           liquidity: '100',
           token0: {
-            id: token0.address
+            id: token0.address,
           },
           token1: {
-            id: token1.address
+            id: token1.address,
           },
           supply: 100,
           reserve: 100,
-          reserveUSD: 100
+          reserveUSD: 100,
         };
       })
       .compact()

@@ -1,14 +1,14 @@
+import { Pool } from '@airdao/astra-cl-sdk';
+import { Protocol } from '@airdao/astra-router-sdk';
+import { Token, TradeType } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@airdao/router-sdk';
-import { Token, TradeType } from '@airdao/sdk-core';
-import { Pool } from '@airdao/v3-sdk';
 import _ from 'lodash';
 
-import { IV2PoolProvider } from '../../../providers/v2/pool-provider';
-import { IV3PoolProvider } from '../../../providers/v3/pool-provider';
+import { ICLPoolProvider } from '../../../providers/cl/pool-provider';
+import { IClassicPoolProvider } from '../../../providers/classic/pool-provider';
 import { CurrencyAmount } from '../../../util/amounts';
 import { routeToString } from '../../../util/routes';
-import { MixedRoute, V2Route, V3Route } from '../../router';
+import { ClassicRoute, CLRoute, MixedRoute } from '../../router';
 import { IGasModel } from '../gas-models/gas-model';
 
 /**
@@ -20,7 +20,7 @@ import { IGasModel } from '../gas-models/gas-model';
  * @template Route
  */
 export interface IRouteWithValidQuote<
-  Route extends V3Route | V2Route | MixedRoute
+  Route extends CLRoute | ClassicRoute | MixedRoute
 > {
   amount: CurrencyAmount;
   percent: number;
@@ -38,52 +38,52 @@ export interface IRouteWithValidQuote<
 }
 
 // Discriminated unions on protocol field to narrow types.
-export type IV2RouteWithValidQuote = {
-  protocol: Protocol.V2;
-} & IRouteWithValidQuote<V2Route>;
+export type IClassicRouteWithValidQuote = {
+  protocol: Protocol.Classic;
+} & IRouteWithValidQuote<ClassicRoute>;
 
-export type IV3RouteWithValidQuote = {
-  protocol: Protocol.V3;
-} & IRouteWithValidQuote<V3Route>;
+export type ICLRouteWithValidQuote = {
+  protocol: Protocol.CL;
+} & IRouteWithValidQuote<CLRoute>;
 
 export type IMixedRouteWithValidQuote = {
   protocol: Protocol.MIXED;
 } & IRouteWithValidQuote<MixedRoute>;
 
 export type RouteWithValidQuote =
-  | V2RouteWithValidQuote
-  | V3RouteWithValidQuote
+  | ClassicRouteWithValidQuote
+  | CLRouteWithValidQuote
   | MixedRouteWithValidQuote;
 
-export type V2RouteWithValidQuoteParams = {
+export type ClassicRouteWithValidQuoteParams = {
   amount: CurrencyAmount;
   rawQuote: BigNumber;
   percent: number;
-  route: V2Route;
-  gasModel: IGasModel<V2RouteWithValidQuote>;
+  route: ClassicRoute;
+  gasModel: IGasModel<ClassicRouteWithValidQuote>;
   quoteToken: Token;
   tradeType: TradeType;
-  v2PoolProvider: IV2PoolProvider;
+  classicPoolProvider: IClassicPoolProvider;
 };
 /**
- * Represents a quote for swapping on a V2 only route. Contains all information
+ * Represents a quote for swapping on a Classic only route. Contains all information
  * such as the route used, the amount specified by the user, the type of quote
  * (exact in or exact out), the quote itself, and gas estimates.
  *
  * @export
- * @class V2RouteWithValidQuote
+ * @class ClassicRouteWithValidQuote
  */
-export class V2RouteWithValidQuote implements IV2RouteWithValidQuote {
-  public readonly protocol = Protocol.V2;
+export class ClassicRouteWithValidQuote implements IClassicRouteWithValidQuote {
+  public readonly protocol = Protocol.Classic;
   public amount: CurrencyAmount;
   // The BigNumber representing the quote.
   public rawQuote: BigNumber;
   public quote: CurrencyAmount;
   public quoteAdjustedForGas: CurrencyAmount;
   public percent: number;
-  public route: V2Route;
+  public route: ClassicRoute;
   public quoteToken: Token;
-  public gasModel: IGasModel<V2RouteWithValidQuote>;
+  public gasModel: IGasModel<ClassicRouteWithValidQuote>;
   public gasEstimate: BigNumber;
   public gasCostInToken: CurrencyAmount;
   public gasCostInUSD: CurrencyAmount;
@@ -107,8 +107,8 @@ export class V2RouteWithValidQuote implements IV2RouteWithValidQuote {
     gasModel,
     quoteToken,
     tradeType,
-    v2PoolProvider,
-  }: V2RouteWithValidQuoteParams) {
+    classicPoolProvider,
+  }: ClassicRouteWithValidQuoteParams) {
     this.amount = amount;
     this.rawQuote = rawQuote;
     this.quote = CurrencyAmount.fromRawAmount(quoteToken, rawQuote.toString());
@@ -136,37 +136,37 @@ export class V2RouteWithValidQuote implements IV2RouteWithValidQuote {
 
     this.poolAddresses = _.map(
       route.pairs,
-      (p) => v2PoolProvider.getPoolAddress(p.token0, p.token1).poolAddress
+      (p) => classicPoolProvider.getPoolAddress(p.token0, p.token1).poolAddress
     );
 
     this.tokenPath = this.route.path;
   }
 }
 
-export type V3RouteWithValidQuoteParams = {
+export type CLRouteWithValidQuoteParams = {
   amount: CurrencyAmount;
   rawQuote: BigNumber;
   sqrtPriceX96AfterList: BigNumber[];
   initializedTicksCrossedList: number[];
   quoterGasEstimate: BigNumber;
   percent: number;
-  route: V3Route;
-  gasModel: IGasModel<V3RouteWithValidQuote>;
+  route: CLRoute;
+  gasModel: IGasModel<CLRouteWithValidQuote>;
   quoteToken: Token;
   tradeType: TradeType;
-  v3PoolProvider: IV3PoolProvider;
+  clPoolProvider: ICLPoolProvider;
 };
 
 /**
- * Represents a quote for swapping on a V3 only route. Contains all information
+ * Represents a quote for swapping on a CL only route. Contains all information
  * such as the route used, the amount specified by the user, the type of quote
  * (exact in or exact out), the quote itself, and gas estimates.
  *
  * @export
- * @class V3RouteWithValidQuote
+ * @class CLRouteWithValidQuote
  */
-export class V3RouteWithValidQuote implements IV3RouteWithValidQuote {
-  public readonly protocol = Protocol.V3;
+export class CLRouteWithValidQuote implements ICLRouteWithValidQuote {
+  public readonly protocol = Protocol.CL;
   public amount: CurrencyAmount;
   public rawQuote: BigNumber;
   public quote: CurrencyAmount;
@@ -175,9 +175,9 @@ export class V3RouteWithValidQuote implements IV3RouteWithValidQuote {
   public initializedTicksCrossedList: number[];
   public quoterGasEstimate: BigNumber;
   public percent: number;
-  public route: V3Route;
+  public route: CLRoute;
   public quoteToken: Token;
-  public gasModel: IGasModel<V3RouteWithValidQuote>;
+  public gasModel: IGasModel<CLRouteWithValidQuote>;
   public gasEstimate: BigNumber;
   public gasCostInToken: CurrencyAmount;
   public gasCostInUSD: CurrencyAmount;
@@ -204,8 +204,8 @@ export class V3RouteWithValidQuote implements IV3RouteWithValidQuote {
     gasModel,
     quoteToken,
     tradeType,
-    v3PoolProvider,
-  }: V3RouteWithValidQuoteParams) {
+    clPoolProvider,
+  }: CLRouteWithValidQuoteParams) {
     this.amount = amount;
     this.rawQuote = rawQuote;
     this.sqrtPriceX96AfterList = sqrtPriceX96AfterList;
@@ -237,7 +237,7 @@ export class V3RouteWithValidQuote implements IV3RouteWithValidQuote {
     this.poolAddresses = _.map(
       route.pools,
       (p) =>
-        v3PoolProvider.getPoolAddress(p.token0, p.token1, p.fee).poolAddress
+        clPoolProvider.getPoolAddress(p.token0, p.token1, p.fee).poolAddress
     );
 
     this.tokenPath = this.route.tokenPath;
@@ -255,8 +255,8 @@ export type MixedRouteWithValidQuoteParams = {
   mixedRouteGasModel: IGasModel<MixedRouteWithValidQuote>;
   quoteToken: Token;
   tradeType: TradeType;
-  v3PoolProvider: IV3PoolProvider;
-  v2PoolProvider: IV2PoolProvider;
+  clPoolProvider: ICLPoolProvider;
+  classicPoolProvider: IClassicPoolProvider;
 };
 
 /**
@@ -306,8 +306,8 @@ export class MixedRouteWithValidQuote implements IMixedRouteWithValidQuote {
     mixedRouteGasModel,
     quoteToken,
     tradeType,
-    v3PoolProvider,
-    v2PoolProvider,
+    clPoolProvider,
+    classicPoolProvider,
   }: MixedRouteWithValidQuoteParams) {
     this.amount = amount;
     this.rawQuote = rawQuote;
@@ -339,8 +339,8 @@ export class MixedRouteWithValidQuote implements IMixedRouteWithValidQuote {
 
     this.poolAddresses = _.map(route.pools, (p) => {
       return p instanceof Pool
-        ? v3PoolProvider.getPoolAddress(p.token0, p.token1, p.fee).poolAddress
-        : v2PoolProvider.getPoolAddress(p.token0, p.token1).poolAddress;
+        ? clPoolProvider.getPoolAddress(p.token0, p.token1, p.fee).poolAddress
+        : classicPoolProvider.getPoolAddress(p.token0, p.token1).poolAddress;
     });
 
     this.tokenPath = this.route.path;

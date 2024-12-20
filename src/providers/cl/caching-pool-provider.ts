@@ -1,5 +1,5 @@
-import { ChainId, Token } from '@airdao/sdk-core';
-import { FeeAmount, Pool } from '@airdao/v3-sdk';
+import { FeeAmount, Pool } from '@airdao/astra-cl-sdk';
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
 import { metric, MetricLoggerUnit } from '../../util';
@@ -7,38 +7,36 @@ import { log } from '../../util/log';
 
 import { ICache } from './../cache';
 import { ProviderConfig } from './../provider';
-import { IV3PoolProvider, V3PoolAccessor } from './pool-provider';
-
+import { CLPoolAccessor, ICLPoolProvider } from './pool-provider';
 
 /**
- * Provider for getting V3 pools, with functionality for caching the results.
+ * Provider for getting CL pools, with functionality for caching the results.
  * Does not cache by block because we compute quotes using the on-chain quoter
  * so do not mind if the liquidity values are out of date.
  *
  * @export
- * @class CachingV3PoolProvider
+ * @class CachingCLPoolProvider
  */
-export class CachingV3PoolProvider implements IV3PoolProvider {
+export class CachingCLPoolProvider implements ICLPoolProvider {
   private POOL_KEY = (chainId: ChainId, address: string) =>
     `pool-${chainId}-${address}`;
 
   /**
-   * Creates an instance of CachingV3PoolProvider.
+   * Creates an instance of CachingCLPoolProvider.
    * @param chainId The chain id to use.
    * @param poolProvider The provider to use to get the pools when not in the cache.
    * @param cache Cache instance to hold cached pools.
    */
   constructor(
     protected chainId: ChainId,
-    protected poolProvider: IV3PoolProvider,
+    protected poolProvider: ICLPoolProvider,
     private cache: ICache<Pool>
-  ) {
-  }
+  ) {}
 
   public async getPools(
     tokenPairs: [Token, Token, FeeAmount][],
     providerConfig?: ProviderConfig
-  ): Promise<V3PoolAccessor> {
+  ): Promise<CLPoolAccessor> {
     const poolAddressSet: Set<string> = new Set<string>();
     const poolsToGetTokenPairs: Array<[Token, Token, FeeAmount]> = [];
     const poolsToGetAddresses: string[] = [];
@@ -61,12 +59,20 @@ export class CachingV3PoolProvider implements IV3PoolProvider {
         this.POOL_KEY(this.chainId, poolAddress)
       );
       if (cachedPool) {
-        metric.putMetric('V3_INMEMORY_CACHING_POOL_HIT_IN_MEMORY', 1, MetricLoggerUnit.None);
+        metric.putMetric(
+          'CL_INMEMORY_CACHING_POOL_HIT_IN_MEMORY',
+          1,
+          MetricLoggerUnit.None
+        );
         poolAddressToPool[poolAddress] = cachedPool;
         continue;
       }
 
-      metric.putMetric('V3_INMEMORY_CACHING_POOL_MISS_NOT_IN_MEMORY', 1, MetricLoggerUnit.None);
+      metric.putMetric(
+        'CL_INMEMORY_CACHING_POOL_MISS_NOT_IN_MEMORY',
+        1,
+        MetricLoggerUnit.None
+      );
       poolsToGetTokenPairs.push([token0, token1, feeAmount]);
       poolsToGetAddresses.push(poolAddress);
     }
@@ -84,7 +90,7 @@ export class CachingV3PoolProvider implements IV3PoolProvider {
       },
       `Found ${
         Object.keys(poolAddressToPool).length
-      } V3 pools already in local cache. About to get liquidity and slot0s for ${
+      } CL pools already in local cache. About to get liquidity and slot0s for ${
         poolsToGetTokenPairs.length
       } pools.`
     );

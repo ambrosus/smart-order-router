@@ -1,64 +1,79 @@
-import { Protocol } from '@airdao/router-sdk';
-import { ChainId, Currency, Token, TradeType } from '@airdao/sdk-core';
+import { Protocol } from '@airdao/astra-router-sdk';
+import { ChainId, Currency, Token, TradeType } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
 import {
+  IClassicPoolProvider,
+  IClassicSubgraphProvider,
+  ICLPoolProvider,
+  ICLSubgraphProvider,
   IOnChainQuoteProvider,
   ITokenListProvider,
   ITokenProvider,
   ITokenValidatorProvider,
-  IV2PoolProvider,
-  IV2SubgraphProvider,
-  IV3PoolProvider,
-  IV3SubgraphProvider,
-  TokenValidationResult
+  TokenValidationResult,
 } from '../../../providers';
-import { CurrencyAmount, log, metric, MetricLoggerUnit, routeToString } from '../../../util';
+import {
+  CurrencyAmount,
+  log,
+  metric,
+  MetricLoggerUnit,
+  routeToString,
+} from '../../../util';
 import { MixedRoute } from '../../router';
 import { AlphaRouterConfig } from '../alpha-router';
 import { MixedRouteWithValidQuote } from '../entities';
 import { computeAllMixedRoutes } from '../functions/compute-all-routes';
 import {
   CandidatePoolsBySelectionCriteria,
+  ClassicCandidatePools,
+  CLCandidatePools,
   getMixedRouteCandidatePools,
-  V2CandidatePools,
-  V3CandidatePools
 } from '../functions/get-candidate-pools';
 import { IGasModel } from '../gas-models';
 
 import { BaseQuoter } from './base-quoter';
 import { GetQuotesResult, GetRoutesResult } from './model';
 
-export class MixedQuoter extends BaseQuoter<[V3CandidatePools, V2CandidatePools], MixedRoute> {
-  protected v3SubgraphProvider: IV3SubgraphProvider;
-  protected v3PoolProvider: IV3PoolProvider;
-  protected v2SubgraphProvider: IV2SubgraphProvider;
-  protected v2PoolProvider: IV2PoolProvider;
+export class MixedQuoter extends BaseQuoter<
+  [CLCandidatePools, ClassicCandidatePools],
+  MixedRoute
+> {
+  protected clSubgraphProvider: ICLSubgraphProvider;
+  protected clPoolProvider: ICLPoolProvider;
+  protected classicSubgraphProvider: IClassicSubgraphProvider;
+  protected classicPoolProvider: IClassicPoolProvider;
   protected onChainQuoteProvider: IOnChainQuoteProvider;
 
   constructor(
-    v3SubgraphProvider: IV3SubgraphProvider,
-    v3PoolProvider: IV3PoolProvider,
-    v2SubgraphProvider: IV2SubgraphProvider,
-    v2PoolProvider: IV2PoolProvider,
+    clSubgraphProvider: ICLSubgraphProvider,
+    clPoolProvider: ICLPoolProvider,
+    classicSubgraphProvider: IClassicSubgraphProvider,
+    classicPoolProvider: IClassicPoolProvider,
     onChainQuoteProvider: IOnChainQuoteProvider,
     tokenProvider: ITokenProvider,
     chainId: ChainId,
     blockedTokenListProvider?: ITokenListProvider,
     tokenValidatorProvider?: ITokenValidatorProvider
   ) {
-    super(tokenProvider, chainId, Protocol.MIXED, blockedTokenListProvider, tokenValidatorProvider);
-    this.v3SubgraphProvider = v3SubgraphProvider;
-    this.v3PoolProvider = v3PoolProvider;
-    this.v2SubgraphProvider = v2SubgraphProvider;
-    this.v2PoolProvider = v2PoolProvider;
+    super(
+      tokenProvider,
+      chainId,
+      Protocol.MIXED,
+      blockedTokenListProvider,
+      tokenValidatorProvider
+    );
+    this.clSubgraphProvider = clSubgraphProvider;
+    this.clPoolProvider = clPoolProvider;
+    this.classicSubgraphProvider = classicSubgraphProvider;
+    this.classicPoolProvider = classicPoolProvider;
     this.onChainQuoteProvider = onChainQuoteProvider;
   }
 
   protected async getRoutes(
     tokenIn: Token,
     tokenOut: Token,
-    v3v2candidatePools: [V3CandidatePools, V2CandidatePools],
+    clClassicCandidatePools: [CLCandidatePools, ClassicCandidatePools],
     tradeType: TradeType,
     routingConfig: AlphaRouterConfig
   ): Promise<GetRoutesResult<MixedRoute>> {
@@ -68,30 +83,30 @@ export class MixedQuoter extends BaseQuoter<[V3CandidatePools, V2CandidatePools]
       throw new Error('Mixed route quotes are not supported for EXACT_OUTPUT');
     }
 
-    const [v3CandidatePools, v2CandidatePools] = v3v2candidatePools;
+    const [clCandidatePools, classicCandidatePools] = clClassicCandidatePools;
 
     const {
-      V2poolAccessor,
-      V3poolAccessor,
+      ClassicPoolAccessor: ClassicPoolAccessor,
+      CLPoolAccessor: CLPoolAccessor,
       candidatePools: mixedRouteCandidatePools,
     } = await getMixedRouteCandidatePools({
-      v3CandidatePools,
-      v2CandidatePools,
+      clCandidatePools: clCandidatePools,
+      classicCandidatePools: classicCandidatePools,
       tokenProvider: this.tokenProvider,
-      v3poolProvider: this.v3PoolProvider,
-      v2poolProvider: this.v2PoolProvider,
+      clPoolProvider: this.clPoolProvider,
+      classicPoolProvider: this.classicPoolProvider,
       routingConfig,
-      chainId: this.chainId
+      chainId: this.chainId,
     });
 
-    const V3poolsRaw = V3poolAccessor.getAllPools();
-    const V2poolsRaw = V2poolAccessor.getAllPools();
+    const CLPoolsRaw = CLPoolAccessor.getAllPools();
+    const ClassicPoolsRaw = ClassicPoolAccessor.getAllPools();
 
-    const poolsRaw = [...V3poolsRaw, ...V2poolsRaw];
+    const poolsRaw = [...CLPoolsRaw, ...ClassicPoolsRaw];
 
     const candidatePools = mixedRouteCandidatePools;
 
-    // Drop any pools that contain fee on transfer tokens (not supported by v3) or have issues with being transferred.
+    // Drop any pools that contain fee on transfer tokens (not supported by CL) or have issues with being transferred.
     const pools = await this.applyTokenValidatorToPools(
       poolsRaw,
       (
@@ -131,11 +146,15 @@ export class MixedQuoter extends BaseQuoter<[V3CandidatePools, V2CandidatePools]
       maxSwapsPerPath
     );
 
-    metric.putMetric('MixedGetRoutesLoad', Date.now() - beforeGetRoutes, MetricLoggerUnit.Milliseconds);
+    metric.putMetric(
+      'MixedGetRoutesLoad',
+      Date.now() - beforeGetRoutes,
+      MetricLoggerUnit.Milliseconds
+    );
 
     return {
       routes,
-      candidatePools
+      candidatePools,
     };
   }
 
@@ -152,7 +171,9 @@ export class MixedQuoter extends BaseQuoter<[V3CandidatePools, V2CandidatePools]
     const beforeGetQuotes = Date.now();
     log.info('Starting to get mixed quotes');
     if (gasModel === undefined) {
-      throw new Error('GasModel for MixedRouteWithValidQuote is required to getQuotes');
+      throw new Error(
+        'GasModel for MixedRouteWithValidQuote is required to getQuotes'
+      );
     }
     if (routes.length == 0) {
       return { routesWithValidQuotes: [], candidatePools };
@@ -229,20 +250,23 @@ export class MixedQuoter extends BaseQuoter<[V3CandidatePools, V2CandidatePools]
           mixedRouteGasModel: gasModel,
           quoteToken,
           tradeType,
-          v3PoolProvider: this.v3PoolProvider,
-          v2PoolProvider: this.v2PoolProvider,
+          clPoolProvider: this.clPoolProvider,
+          classicPoolProvider: this.classicPoolProvider,
         });
 
         routesWithValidQuotes.push(routeWithValidQuote);
       }
     }
 
-    metric.putMetric('MixedGetQuotesLoad', Date.now() - beforeGetQuotes, MetricLoggerUnit.Milliseconds);
+    metric.putMetric(
+      'MixedGetQuotesLoad',
+      Date.now() - beforeGetQuotes,
+      MetricLoggerUnit.Milliseconds
+    );
 
     return {
       routesWithValidQuotes,
-      candidatePools
+      candidatePools,
     };
   }
-
 }

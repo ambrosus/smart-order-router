@@ -1,58 +1,61 @@
-import { BigNumber } from '@ethersproject/bignumber';
-import { Protocol } from '@airdao/router-sdk';
+import { FeeAmount, Pool } from '@airdao/astra-cl-sdk';
+import { Pair } from '@airdao/astra-classic-sdk/dist/entities';
+import { Protocol } from '@airdao/astra-router-sdk';
 import {
   ChainId,
   Currency,
   CurrencyAmount,
   Token,
   TradeType,
-} from '@airdao/sdk-core';
-import { Pair } from '@airdao/v2-sdk/dist/entities';
-import { FeeAmount, Pool } from '@airdao/v3-sdk';
+} from '@airdao/astra-sdk-core';
+import { BigNumber } from '@ethersproject/bignumber';
 import JSBI from 'jsbi';
 import _ from 'lodash';
 
-import { IV2PoolProvider } from '../providers';
-import { IPortionProvider } from '../providers/portion-provider';
-import { ProviderConfig } from '../providers/provider';
+import { IClassicPoolProvider } from '../providers';
 import {
   ArbitrumGasData,
   OptimismGasData,
-} from '../providers/v3/gas-data-provider';
-import { IV3PoolProvider } from '../providers/v3/pool-provider';
+} from '../providers/cl/gas-data-provider';
+import { ICLPoolProvider } from '../providers/cl/pool-provider';
+import { IPortionProvider } from '../providers/portion-provider';
+import { ProviderConfig } from '../providers/provider';
 import {
+  ClassicRouteWithValidQuote,
+  CLRouteWithValidQuote,
   MethodParameters,
   MixedRouteWithValidQuote,
   SwapOptions,
   SwapRoute,
   usdGasTokensByChain,
-  V2RouteWithValidQuote,
-  V3RouteWithValidQuote,
 } from '../routers';
 import { log, WRAPPED_NATIVE_CURRENCY } from '../util';
 
 import { buildTrade } from './methodParameters';
 
-export async function getV2NativePool(
+export async function getClassicNativePool(
   token: Token,
-  poolProvider: IV2PoolProvider,
-  providerConfig?: ProviderConfig,
+  poolProvider: IClassicPoolProvider,
+  providerConfig?: ProviderConfig
 ): Promise<Pair | null> {
   const chainId = token.chainId as ChainId;
-  const weth = WRAPPED_NATIVE_CURRENCY[chainId]!;
+  const samb = WRAPPED_NATIVE_CURRENCY[chainId]!;
 
-  const poolAccessor = await poolProvider.getPools([[weth, token]], providerConfig);
-  const pool = poolAccessor.getPool(weth, token);
+  const poolAccessor = await poolProvider.getPools(
+    [[samb, token]],
+    providerConfig
+  );
+  const pool = poolAccessor.getPool(samb, token);
 
   if (!pool || pool.reserve0.equalTo(0) || pool.reserve1.equalTo(0)) {
     log.error(
       {
-        weth,
+        samb,
         token,
         reserve0: pool?.reserve0.toExact(),
         reserve1: pool?.reserve1.toExact(),
       },
-      `Could not find a valid WETH V2 pool with ${token.symbol} for computing gas costs.`
+      `Could not find a valid SAMB Classic pool with ${token.symbol} for computing gas costs.`
     );
 
     return null;
@@ -61,9 +64,9 @@ export async function getV2NativePool(
   return pool;
 }
 
-export async function getHighestLiquidityV3NativePool(
+export async function getHighestLiquidityCLNativePool(
   token: Token,
-  poolProvider: IV3PoolProvider,
+  poolProvider: ICLPoolProvider,
   providerConfig?: ProviderConfig
 ): Promise<Pool | null> {
   const nativeCurrency = WRAPPED_NATIVE_CURRENCY[token.chainId as ChainId]!;
@@ -109,9 +112,9 @@ export async function getHighestLiquidityV3NativePool(
   return maxPool;
 }
 
-export async function getHighestLiquidityV3USDPool(
+export async function getHighestLiquidityCLUSDPool(
   chainId: ChainId,
-  poolProvider: IV3PoolProvider,
+  poolProvider: ICLPoolProvider,
   providerConfig?: ProviderConfig
 ): Promise<Pool> {
   const usdTokens = usdGasTokensByChain[chainId];
@@ -266,8 +269,8 @@ export async function calculateGasUsed(
   chainId: ChainId,
   route: SwapRoute,
   simulatedGasUsed: BigNumber,
-  v2PoolProvider: IV2PoolProvider,
-  v3PoolProvider: IV3PoolProvider,
+  classicPoolProvider: IClassicPoolProvider,
+  clPoolProvider: ICLPoolProvider,
   l2GasData?: ArbitrumGasData | OptimismGasData,
   providerConfig?: ProviderConfig
 ) {
@@ -302,9 +305,9 @@ export async function calculateGasUsed(
     gasCostInWei
   );
 
-  const usdPool: Pool = await getHighestLiquidityV3USDPool(
+  const usdPool: Pool = await getHighestLiquidityCLUSDPool(
     chainId,
-    v3PoolProvider,
+    clPoolProvider,
     providerConfig
   );
 
@@ -314,12 +317,12 @@ export async function calculateGasUsed(
   // get fee in terms of quote token
   if (!quoteToken.equals(nativeCurrency)) {
     const nativePools = await Promise.all([
-      getHighestLiquidityV3NativePool(
+      getHighestLiquidityCLNativePool(
         quoteToken,
-        v3PoolProvider,
+        clPoolProvider,
         providerConfig
       ),
-      getV2NativePool(quoteToken, v2PoolProvider, providerConfig),
+      getClassicNativePool(quoteToken, classicPoolProvider, providerConfig),
     ]);
     const nativePool = nativePools.find((pool) => pool !== null);
 
@@ -356,8 +359,8 @@ export async function calculateGasUsed(
 
 export function initSwapRouteFromExisting(
   swapRoute: SwapRoute,
-  v2PoolProvider: IV2PoolProvider,
-  v3PoolProvider: IV3PoolProvider,
+  classicPoolProvider: IClassicPoolProvider,
+  clPoolProvider: ICLPoolProvider,
   portionProvider: IPortionProvider,
   quoteGasAdjusted: CurrencyAmount<Currency>,
   estimatedGasUsed: BigNumber,
@@ -372,8 +375,8 @@ export function initSwapRouteFromExisting(
     : TradeType.EXACT_INPUT;
   const routesWithValidQuote = swapRoute.route.map((route) => {
     switch (route.protocol) {
-      case Protocol.V3:
-        return new V3RouteWithValidQuote({
+      case Protocol.CL:
+        return new CLRouteWithValidQuote({
           amount: CurrencyAmount.fromFractionalAmount(
             route.amount.currency,
             route.amount.numerator,
@@ -396,10 +399,10 @@ export function initSwapRouteFromExisting(
             route.quoteToken.name
           ),
           tradeType: tradeType,
-          v3PoolProvider: v3PoolProvider,
+          clPoolProvider: clPoolProvider,
         });
-      case Protocol.V2:
-        return new V2RouteWithValidQuote({
+      case Protocol.Classic:
+        return new ClassicRouteWithValidQuote({
           amount: CurrencyAmount.fromFractionalAmount(
             route.amount.currency,
             route.amount.numerator,
@@ -417,7 +420,7 @@ export function initSwapRouteFromExisting(
             route.quoteToken.name
           ),
           tradeType: tradeType,
-          v2PoolProvider: v2PoolProvider,
+          classicPoolProvider,
         });
       case Protocol.MIXED:
         return new MixedRouteWithValidQuote({
@@ -435,7 +438,7 @@ export function initSwapRouteFromExisting(
           percent: route.percent,
           route: route.route,
           mixedRouteGasModel: route.gasModel,
-          v2PoolProvider,
+          classicPoolProvider: classicPoolProvider,
           quoteToken: new Token(
             currencyIn.chainId,
             route.quoteToken.address,
@@ -444,7 +447,7 @@ export function initSwapRouteFromExisting(
             route.quoteToken.name
           ),
           tradeType: tradeType,
-          v3PoolProvider: v3PoolProvider,
+          clPoolProvider: clPoolProvider,
         });
     }
   });

@@ -1,14 +1,14 @@
-import { ChainId, Token } from '@airdao/sdk-core';
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import retry from 'async-retry';
 import Timeout from 'await-timeout';
 import { gql, GraphQLClient } from 'graphql-request';
 import _ from 'lodash';
 
 import { log } from '../../util';
+import { ClassicSubgraphPool } from '../classic/subgraph-provider';
 import { ProviderConfig } from '../provider';
-import { V2SubgraphPool } from '../v2/subgraph-provider';
 
-export interface V3SubgraphPool {
+export interface CLSubgraphPool {
   id: string;
   feeTier: string;
   liquidity: string;
@@ -18,11 +18,11 @@ export interface V3SubgraphPool {
   token1: {
     id: string;
   };
-  tvlETH: number;
+  tvlAMB: number;
   tvlUSD: number;
 }
 
-type RawV3SubgraphPool = {
+type RawCLSubgraphPool = {
   id: string;
   feeTier: string;
   liquidity: string;
@@ -35,13 +35,13 @@ type RawV3SubgraphPool = {
     id: string;
   };
   totalValueLockedUSD: string;
-  totalValueLockedETH: string;
+  totalValueLockedAMB: string;
 };
 
-export const printV3SubgraphPool = (s: V3SubgraphPool) =>
+export const printCLSubgraphPool = (s: CLSubgraphPool) =>
   `${s.token0.id}/${s.token1.id}/${s.feeTier}`;
 
-export const printV2SubgraphPool = (s: V2SubgraphPool) =>
+export const printClassicSubgraphPool = (s: ClassicSubgraphPool) =>
   `${s.token0.id}/${s.token1.id}`;
 
 const SUBGRAPH_URL_BY_CHAIN: { [chainId in ChainId]?: string } = {
@@ -70,20 +70,20 @@ const SUBGRAPH_URL_BY_CHAIN: { [chainId in ChainId]?: string } = {
 const PAGE_SIZE = 1000; // 1k is max possible query size from subgraph.
 
 /**
- * Provider for getting V3 pools from the Subgraph
+ * Provider for getting CL pools from the Subgraph
  *
  * @export
- * @interface IV3SubgraphProvider
+ * @interface ICLSubgraphProvider
  */
-export interface IV3SubgraphProvider {
+export interface ICLSubgraphProvider {
   getPools(
     tokenIn?: Token,
     tokenOut?: Token,
     providerConfig?: ProviderConfig
-  ): Promise<V3SubgraphPool[]>;
+  ): Promise<CLSubgraphPool[]>;
 }
 
-export class V3SubgraphProvider implements IV3SubgraphProvider {
+export class CLSubgraphProvider implements ICLSubgraphProvider {
   private client: GraphQLClient;
 
   constructor(
@@ -103,7 +103,7 @@ export class V3SubgraphProvider implements IV3SubgraphProvider {
     _tokenIn?: Token,
     _tokenOut?: Token,
     providerConfig?: ProviderConfig
-  ): Promise<V3SubgraphPool[]> {
+  ): Promise<CLSubgraphPool[]> {
     let blockNumber = providerConfig?.blockNumber
       ? await providerConfig.blockNumber
       : undefined;
@@ -127,15 +127,15 @@ export class V3SubgraphProvider implements IV3SubgraphProvider {
           feeTier
           liquidity
           totalValueLockedUSD
-          totalValueLockedETH
+          totalValueLockedAMB
         }
       }
     `;
 
-    let pools: RawV3SubgraphPool[] = [];
+    let pools: RawCLSubgraphPool[] = [];
 
     log.info(
-      `Getting V3 pools from the subgraph with page size ${PAGE_SIZE}${
+      `Getting CL pools from the subgraph with page size ${PAGE_SIZE}${
         providerConfig?.blockNumber
           ? ` as of block ${providerConfig?.blockNumber}`
           : ''
@@ -146,14 +146,14 @@ export class V3SubgraphProvider implements IV3SubgraphProvider {
       async () => {
         const timeout = new Timeout();
 
-        const getPools = async (): Promise<RawV3SubgraphPool[]> => {
+        const getPools = async (): Promise<RawCLSubgraphPool[]> => {
           let lastId = '';
-          let pools: RawV3SubgraphPool[] = [];
-          let poolsPage: RawV3SubgraphPool[] = [];
+          let pools: RawCLSubgraphPool[] = [];
+          let poolsPage: RawCLSubgraphPool[] = [];
 
           do {
             const poolsResult = await this.client.request<{
-              pools: RawV3SubgraphPool[];
+              pools: RawCLSubgraphPool[];
             }>(query, {
               pageSize: PAGE_SIZE,
               id: lastId,
@@ -188,7 +188,7 @@ export class V3SubgraphProvider implements IV3SubgraphProvider {
       },
       {
         retries: this.retries,
-        onRetry: (err, retry) => {
+        onRetry: (err: Error, retry) => {
           if (
             this.rollback &&
             blockNumber &&
@@ -212,10 +212,10 @@ export class V3SubgraphProvider implements IV3SubgraphProvider {
       .filter(
         (pool) =>
           parseInt(pool.liquidity) > 0 ||
-          parseFloat(pool.totalValueLockedETH) > 0.01
+          parseFloat(pool.totalValueLockedAMB) > 0.01
       )
       .map((pool) => {
-        const { totalValueLockedETH, totalValueLockedUSD, ...rest } = pool;
+        const { totalValueLockedAMB, totalValueLockedUSD, ...rest } = pool;
 
         return {
           ...rest,
@@ -226,13 +226,13 @@ export class V3SubgraphProvider implements IV3SubgraphProvider {
           token1: {
             id: pool.token1.id.toLowerCase(),
           },
-          tvlETH: parseFloat(totalValueLockedETH),
+          tvlAMB: parseFloat(totalValueLockedAMB),
           tvlUSD: parseFloat(totalValueLockedUSD),
         };
       });
 
     log.info(
-      `Got ${pools.length} V3 pools from the subgraph. ${poolsSanitized.length} after filtering`
+      `Got ${pools.length} CL pools from the subgraph. ${poolsSanitized.length} after filtering`
     );
 
     return poolsSanitized;

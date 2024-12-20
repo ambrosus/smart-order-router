@@ -1,4 +1,4 @@
-import { ChainId } from '@airdao/sdk-core';
+import { ChainId } from '@airdao/astra-sdk-core';
 
 import { log } from '../util/log';
 
@@ -9,7 +9,7 @@ import { GasPrice, IGasPriceProvider } from './gas-price-provider';
  * Provider for getting gas price, with functionality for caching the results.
  *
  * @export
- * @class CachingV3SubgraphProvider
+ * @class CachingCLSubgraphProvider
  */
 export class CachingGasStationProvider implements IGasPriceProvider {
   private GAS_KEY = (chainId: ChainId) => `gasPrice-${chainId}`;

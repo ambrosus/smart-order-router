@@ -1,7 +1,7 @@
+import { Position } from '@airdao/astra-cl-sdk';
+import { Amber, Currency, Fraction, Percent } from '@airdao/astra-sdk-core';
 import { Logger } from '@ethersproject/logger';
 import { flags } from '@oclif/command';
-import { Currency, Ether, Fraction, Percent } from '@airdao/sdk-core';
-import { Position } from '@airdao/v3-sdk';
 import dotenv from 'dotenv';
 import {
   ID_TO_CHAIN_ID,
@@ -18,7 +18,7 @@ Logger.globalLogger();
 Logger.setLogLevel(Logger.levels.DEBUG);
 
 export class QuoteToRatio extends BaseCommand {
-  static description = 'Uniswap Smart Order Router CLI';
+  static description = 'Astra Smart Order Router CLI';
 
   static flags = {
     ...BaseCommand.flags,
@@ -68,12 +68,12 @@ export class QuoteToRatio extends BaseCommand {
     const chainId = ID_TO_CHAIN_ID(chainIdNumb);
     // TODO add support for polygon
     const token0: Currency =
-      token0Str == 'ETH'
-        ? Ether.onChain(chainId)
+      token0Str == 'AMB'
+        ? Amber.onChain(chainId)
         : tokenAccessor.getTokenByAddress(token0Str)!;
     const token1: Currency =
-      token1Str == 'ETH'
-        ? Ether.onChain(chainId)
+      token1Str == 'AMB'
+        ? Amber.onChain(chainId)
         : tokenAccessor.getTokenByAddress(token1Str)!;
 
     const token0Balance = parseAmount(token0BalanceStr, token0);

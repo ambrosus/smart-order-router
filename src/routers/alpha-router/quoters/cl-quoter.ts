@@ -1,63 +1,78 @@
-import { Protocol } from '@airdao/router-sdk';
-import { ChainId, Currency, Token, TradeType } from '@airdao/sdk-core';
+import { Protocol } from '@airdao/astra-router-sdk';
+import { ChainId, Currency, Token, TradeType } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
 import {
+  ICLPoolProvider,
+  ICLSubgraphProvider,
   IOnChainQuoteProvider,
   ITokenListProvider,
   ITokenProvider,
   ITokenValidatorProvider,
-  IV3PoolProvider,
-  IV3SubgraphProvider,
-  TokenValidationResult
+  TokenValidationResult,
 } from '../../../providers';
-import { CurrencyAmount, log, metric, MetricLoggerUnit, routeToString } from '../../../util';
-import { V3Route } from '../../router';
+import {
+  CurrencyAmount,
+  log,
+  metric,
+  MetricLoggerUnit,
+  routeToString,
+} from '../../../util';
+import { CLRoute } from '../../router';
 import { AlphaRouterConfig } from '../alpha-router';
-import { V3RouteWithValidQuote } from '../entities';
-import { computeAllV3Routes } from '../functions/compute-all-routes';
-import { CandidatePoolsBySelectionCriteria, V3CandidatePools } from '../functions/get-candidate-pools';
+import { CLRouteWithValidQuote } from '../entities';
+import { computeAllCLRoutes } from '../functions/compute-all-routes';
+import {
+  CandidatePoolsBySelectionCriteria,
+  CLCandidatePools,
+} from '../functions/get-candidate-pools';
 import { IGasModel } from '../gas-models';
 
 import { BaseQuoter } from './base-quoter';
 import { GetQuotesResult } from './model/results/get-quotes-result';
 import { GetRoutesResult } from './model/results/get-routes-result';
 
-export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route> {
-  protected v3SubgraphProvider: IV3SubgraphProvider;
-  protected v3PoolProvider: IV3PoolProvider;
+export class CLQuoter extends BaseQuoter<CLCandidatePools, CLRoute> {
+  protected clSubgraphProvider: ICLSubgraphProvider;
+  protected clPoolProvider: ICLPoolProvider;
   protected onChainQuoteProvider: IOnChainQuoteProvider;
 
   constructor(
-    v3SubgraphProvider: IV3SubgraphProvider,
-    v3PoolProvider: IV3PoolProvider,
+    clSubgraphProvider: ICLSubgraphProvider,
+    clPoolProvider: ICLPoolProvider,
     onChainQuoteProvider: IOnChainQuoteProvider,
     tokenProvider: ITokenProvider,
     chainId: ChainId,
     blockedTokenListProvider?: ITokenListProvider,
     tokenValidatorProvider?: ITokenValidatorProvider
   ) {
-    super(tokenProvider, chainId, Protocol.V3, blockedTokenListProvider, tokenValidatorProvider);
-    this.v3SubgraphProvider = v3SubgraphProvider;
-    this.v3PoolProvider = v3PoolProvider;
+    super(
+      tokenProvider,
+      chainId,
+      Protocol.CL,
+      blockedTokenListProvider,
+      tokenValidatorProvider
+    );
+    this.clSubgraphProvider = clSubgraphProvider;
+    this.clPoolProvider = clPoolProvider;
     this.onChainQuoteProvider = onChainQuoteProvider;
   }
 
   protected async getRoutes(
     tokenIn: Token,
     tokenOut: Token,
-    v3CandidatePools: V3CandidatePools,
+    clCandidatePools: CLCandidatePools,
     _tradeType: TradeType,
     routingConfig: AlphaRouterConfig
-  ): Promise<GetRoutesResult<V3Route>> {
+  ): Promise<GetRoutesResult<CLRoute>> {
     const beforeGetRoutes = Date.now();
     // Fetch all the pools that we will consider routing via. There are thousands
     // of pools, so we filter them to a set of candidate pools that we expect will
     // result in good prices.
-    const { poolAccessor, candidatePools } = v3CandidatePools;
+    const { poolAccessor, candidatePools } = clCandidatePools;
     const poolsRaw = poolAccessor.getAllPools();
 
-    // Drop any pools that contain fee on transfer tokens (not supported by v3) or have issues with being transferred.
+    // Drop any pools that contain fee on transfer tokens (not supported by CL) or have issues with being transferred.
     const pools = await this.applyTokenValidatorToPools(
       poolsRaw,
       (
@@ -90,14 +105,18 @@ export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route> {
 
     // Given all our candidate pools, compute all the possible ways to route from tokenIn to tokenOut.
     const { maxSwapsPerPath } = routingConfig;
-    const routes = computeAllV3Routes(
+    const routes = computeAllCLRoutes(
       tokenIn,
       tokenOut,
       pools,
       maxSwapsPerPath
     );
 
-    metric.putMetric('V3GetRoutesLoad', Date.now() - beforeGetRoutes, MetricLoggerUnit.Milliseconds);
+    metric.putMetric(
+      'CLGetRoutesLoad',
+      Date.now() - beforeGetRoutes,
+      MetricLoggerUnit.Milliseconds
+    );
 
     return {
       routes,
@@ -106,20 +125,22 @@ export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route> {
   }
 
   public async getQuotes(
-    routes: V3Route[],
+    routes: CLRoute[],
     amounts: CurrencyAmount[],
     percents: number[],
     quoteToken: Token,
     tradeType: TradeType,
     routingConfig: AlphaRouterConfig,
     candidatePools?: CandidatePoolsBySelectionCriteria,
-    gasModel?: IGasModel<V3RouteWithValidQuote>
+    gasModel?: IGasModel<CLRouteWithValidQuote>
   ): Promise<GetQuotesResult> {
     const beforeGetQuotes = Date.now();
-    log.info('Starting to get V3 quotes');
+    log.info('Starting to get CL quotes');
 
     if (gasModel === undefined) {
-      throw new Error('GasModel for V3RouteWithValidQuote is required to getQuotes');
+      throw new Error(
+        'GasModel for CLRouteWithValidQuote is required to getQuotes'
+      );
     }
 
     if (routes.length == 0) {
@@ -130,29 +151,29 @@ export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route> {
     const quoteFn =
       tradeType == TradeType.EXACT_INPUT
         ? this.onChainQuoteProvider.getQuotesManyExactIn.bind(
-          this.onChainQuoteProvider
-        )
+            this.onChainQuoteProvider
+          )
         : this.onChainQuoteProvider.getQuotesManyExactOut.bind(
-          this.onChainQuoteProvider
-        );
+            this.onChainQuoteProvider
+          );
 
     const beforeQuotes = Date.now();
     log.info(
-      `Getting quotes for V3 for ${routes.length} routes with ${amounts.length} amounts per route.`
+      `Getting quotes for CL for ${routes.length} routes with ${amounts.length} amounts per route.`
     );
 
-    const { routesWithQuotes } = await quoteFn<V3Route>(amounts, routes, {
+    const { routesWithQuotes } = await quoteFn<CLRoute>(amounts, routes, {
       blockNumber: routingConfig.blockNumber,
     });
 
     metric.putMetric(
-      'V3QuotesLoad',
+      'CLQuotesLoad',
       Date.now() - beforeQuotes,
       MetricLoggerUnit.Milliseconds
     );
 
     metric.putMetric(
-      'V3QuotesFetched',
+      'CLQuotesFetched',
       _(routesWithQuotes)
         .map(([, quotes]) => quotes.length)
         .sum(),
@@ -186,12 +207,12 @@ export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route> {
               route: routeToString(route),
               amountQuote,
             },
-            'Dropping a null V3 quote for route.'
+            'Dropping a null CL quote for route.'
           );
           continue;
         }
 
-        const routeWithValidQuote = new V3RouteWithValidQuote({
+        const routeWithValidQuote = new CLRouteWithValidQuote({
           route,
           rawQuote: quote,
           amount,
@@ -202,18 +223,22 @@ export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route> {
           gasModel,
           quoteToken,
           tradeType,
-          v3PoolProvider: this.v3PoolProvider,
+          clPoolProvider: this.clPoolProvider,
         });
 
         routesWithValidQuotes.push(routeWithValidQuote);
       }
     }
 
-    metric.putMetric('V3GetQuotesLoad', Date.now() - beforeGetQuotes, MetricLoggerUnit.Milliseconds);
+    metric.putMetric(
+      'CLGetQuotesLoad',
+      Date.now() - beforeGetQuotes,
+      MetricLoggerUnit.Milliseconds
+    );
 
     return {
       routesWithValidQuotes,
-      candidatePools
+      candidatePools,
     };
   }
 }

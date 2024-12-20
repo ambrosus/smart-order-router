@@ -1,24 +1,24 @@
+import { FeeAmount, MethodParameters, Pool, Route } from '@airdao/astra-cl-sdk';
+import { SwapRouter, Trade } from '@airdao/astra-router-sdk';
+import { ChainId, Currency, Token, TradeType } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import { Logger } from '@ethersproject/logger';
-import { SwapRouter, Trade } from '@airdao/router-sdk';
-import { ChainId, Currency, Token, TradeType } from '@airdao/sdk-core';
-import { FeeAmount, MethodParameters, Pool, Route } from '@airdao/v3-sdk';
 import _ from 'lodash';
 
 import { IOnChainQuoteProvider, RouteWithQuotes } from '../../providers';
+import { ICLPoolProvider } from '../../providers/cl/pool-provider';
 import { IMulticallProvider } from '../../providers/multicall-provider';
 import {
   DAI_MAINNET,
   ITokenProvider,
   USDC_MAINNET,
 } from '../../providers/token-provider';
-import { IV3PoolProvider } from '../../providers/v3/pool-provider';
 import { SWAP_ROUTER_02_ADDRESSES } from '../../util';
 import { CurrencyAmount } from '../../util/amounts';
 import { log } from '../../util/log';
 import { routeToString } from '../../util/routes';
-import { V3RouteWithValidQuote } from '../alpha-router';
-import { SwapOptionsSwapRouter02, SwapRoute, V3Route } from '../router';
+import { CLRouteWithValidQuote } from '../alpha-router';
+import { CLRoute, SwapOptionsSwapRouter02, SwapRoute } from '../router';
 
 import {
   ADDITIONAL_BASES,
@@ -29,7 +29,7 @@ import {
 export type LegacyRouterParams = {
   chainId: ChainId;
   multicall2Provider: IMulticallProvider;
-  poolProvider: IV3PoolProvider;
+  poolProvider: ICLPoolProvider;
   quoteProvider: IOnChainQuoteProvider;
   tokenProvider: ITokenProvider;
 };
@@ -42,14 +42,14 @@ export type LegacyRoutingConfig = {
 };
 
 /**
- * Replicates the router implemented in the V3 interface.
+ * Replicates the router implemented in the CL interface.
  * Code is mostly a copy from https://github.com/Uniswap/uniswap-interface/blob/0190b5a408c13016c87e1030ffc59326c085f389/src/hooks/useBestV3Trade.ts#L22-L23
  * with React/Redux hooks removed, and refactoring to allow re-use in other routers.
  */
 export class LegacyRouter {
   protected chainId: ChainId;
   protected multicall2Provider: IMulticallProvider;
-  protected poolProvider: IV3PoolProvider;
+  protected poolProvider: ICLPoolProvider;
   protected quoteProvider: IOnChainQuoteProvider;
   protected tokenProvider: ITokenProvider;
 
@@ -205,11 +205,11 @@ export class LegacyRouter {
   private async findBestRouteExactIn(
     amountIn: CurrencyAmount,
     tokenOut: Token,
-    routes: V3Route[],
+    routes: CLRoute[],
     routingConfig?: LegacyRoutingConfig
-  ): Promise<V3RouteWithValidQuote | null> {
+  ): Promise<CLRouteWithValidQuote | null> {
     const { routesWithQuotes: quotesRaw } =
-      await this.quoteProvider.getQuotesManyExactIn<V3Route>(
+      await this.quoteProvider.getQuotesManyExactIn<CLRoute>(
         [amountIn],
         routes,
         {
@@ -219,7 +219,7 @@ export class LegacyRouter {
 
     const quotes100Percent = _.map(
       quotesRaw,
-      ([route, quotes]: RouteWithQuotes<V3Route>) =>
+      ([route, quotes]: RouteWithQuotes<CLRoute>) =>
         `${routeToString(route)} : ${quotes[0]?.quote?.toString()}`
     );
     log.info({ quotes100Percent }, '100% Quotes');
@@ -237,11 +237,11 @@ export class LegacyRouter {
   private async findBestRouteExactOut(
     amountOut: CurrencyAmount,
     tokenIn: Token,
-    routes: V3Route[],
+    routes: CLRoute[],
     routingConfig?: LegacyRoutingConfig
-  ): Promise<V3RouteWithValidQuote | null> {
+  ): Promise<CLRouteWithValidQuote | null> {
     const { routesWithQuotes: quotesRaw } =
-      await this.quoteProvider.getQuotesManyExactOut<V3Route>(
+      await this.quoteProvider.getQuotesManyExactOut<CLRoute>(
         [amountOut],
         routes,
         {
@@ -259,11 +259,11 @@ export class LegacyRouter {
   }
 
   private async getBestQuote(
-    routes: V3Route[],
-    quotesRaw: RouteWithQuotes<V3Route>[],
+    routes: CLRoute[],
+    quotesRaw: RouteWithQuotes<CLRoute>[],
     quoteToken: Token,
     routeType: TradeType
-  ): Promise<V3RouteWithValidQuote | null> {
+  ): Promise<CLRouteWithValidQuote | null> {
     log.debug(
       `Got ${
         _.filter(quotesRaw, ([_, quotes]) => !!quotes[0]).length
@@ -271,7 +271,7 @@ export class LegacyRouter {
     );
 
     const routeQuotesRaw: {
-      route: V3Route;
+      route: CLRoute;
       quote: BigNumber;
       amount: CurrencyAmount;
     }[] = [];
@@ -301,7 +301,7 @@ export class LegacyRouter {
     });
 
     const routeQuotes = _.map(routeQuotesRaw, ({ route, quote, amount }) => {
-      return new V3RouteWithValidQuote({
+      return new CLRouteWithValidQuote({
         route,
         rawQuote: quote,
         amount,
@@ -318,7 +318,7 @@ export class LegacyRouter {
         quoterGasEstimate: BigNumber.from(0),
         tradeType: routeType,
         quoteToken,
-        v3PoolProvider: this.poolProvider,
+        clPoolProvider: this.poolProvider,
       });
     });
 
@@ -337,7 +337,7 @@ export class LegacyRouter {
     tokenIn: Token,
     tokenOut: Token,
     routingConfig?: LegacyRoutingConfig
-  ): Promise<V3Route[]> {
+  ): Promise<CLRoute[]> {
     const tokenPairs: [Token, Token, FeeAmount][] =
       await this.getAllPossiblePairings(tokenIn, tokenOut);
 
@@ -346,7 +346,7 @@ export class LegacyRouter {
     });
     const pools = poolAccessor.getAllPools();
 
-    const routes: V3Route[] = this.computeAllRoutes(
+    const routes: CLRoute[] = this.computeAllRoutes(
       tokenIn,
       tokenOut,
       pools,
@@ -436,10 +436,10 @@ export class LegacyRouter {
     pools: Pool[],
     chainId: ChainId,
     currentPath: Pool[] = [],
-    allPaths: V3Route[] = [],
+    allPaths: CLRoute[] = [],
     startTokenIn: Token = tokenIn,
     maxHops = 2
-  ): V3Route[] {
+  ): CLRoute[] {
     for (const pool of pools) {
       if (currentPath.indexOf(pool) !== -1 || !pool.involvesToken(tokenIn))
         continue;
@@ -449,7 +449,7 @@ export class LegacyRouter {
         : pool.token0;
       if (outputToken.equals(tokenOut)) {
         allPaths.push(
-          new V3Route([...currentPath, pool], startTokenIn, tokenOut)
+          new CLRoute([...currentPath, pool], startTokenIn, tokenOut)
         );
       } else if (maxHops > 1) {
         this.computeAllRoutes(
@@ -472,7 +472,7 @@ export class LegacyRouter {
     tokenInCurrency: Currency,
     tokenOutCurrency: Currency,
     tradeType: TTradeType,
-    routeAmount: V3RouteWithValidQuote
+    routeAmount: CLRouteWithValidQuote
   ): Trade<Currency, Currency, TTradeType> {
     const { route, amount, quote } = routeAmount;
 
@@ -498,14 +498,14 @@ export class LegacyRouter {
       );
 
       return new Trade({
-        v3Routes: [
+        clRoutes: [
           {
-            routev3: routeCurrency,
+            routecl: routeCurrency,
             inputAmount: amountCurrency,
             outputAmount: quoteCurrency,
           },
         ],
-        v2Routes: [],
+        classicRoutes: [],
         tradeType: tradeType,
       });
     } else {
@@ -528,14 +528,14 @@ export class LegacyRouter {
       );
 
       return new Trade({
-        v3Routes: [
+        clRoutes: [
           {
-            routev3: routeCurrency,
+            routecl: routeCurrency,
             inputAmount: quoteCurrency,
             outputAmount: amountCurrency,
           },
         ],
-        v2Routes: [],
+        classicRoutes: [],
         tradeType: tradeType,
       });
     }

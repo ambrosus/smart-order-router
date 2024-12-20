@@ -1,4 +1,4 @@
-import { ChainId, Token } from '@airdao/sdk-core';
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import retry from 'async-retry';
 import Timeout from 'await-timeout';
 import { gql, GraphQLClient } from 'graphql-request';
@@ -7,7 +7,7 @@ import _ from 'lodash';
 import { log } from '../../util/log';
 import { ProviderConfig } from '../provider';
 
-export interface V2SubgraphPool {
+export interface ClassicSubgraphPool {
   id: string;
   token0: {
     id: string;
@@ -20,7 +20,7 @@ export interface V2SubgraphPool {
   reserveUSD: number;
 }
 
-type RawV2SubgraphPool = {
+type RawClassicSubgraphPool = {
   id: string;
   token0: {
     symbol: string;
@@ -31,7 +31,7 @@ type RawV2SubgraphPool = {
     id: string;
   };
   totalSupply: string;
-  trackedReserveETH: string;
+  trackedReserveAMB: string;
   reserveUSD: string;
 };
 
@@ -45,20 +45,20 @@ const threshold = 0.025;
 const PAGE_SIZE = 1000; // 1k is max possible query size from subgraph.
 
 /**
- * Provider for getting V2 pools from the Subgraph
+ * Provider for getting classic pools from the Subgraph
  *
  * @export
- * @interface IV2SubgraphProvider
+ * @interface IClassicSubgraphProvider
  */
-export interface IV2SubgraphProvider {
+export interface IClassicSubgraphProvider {
   getPools(
     tokenIn?: Token,
     tokenOut?: Token,
     providerConfig?: ProviderConfig
-  ): Promise<V2SubgraphPool[]>;
+  ): Promise<ClassicSubgraphPool[]>;
 }
 
-export class V2SubgraphProvider implements IV2SubgraphProvider {
+export class ClassicSubgraphProvider implements IClassicSubgraphProvider {
   private client: GraphQLClient;
 
   constructor(
@@ -79,7 +79,7 @@ export class V2SubgraphProvider implements IV2SubgraphProvider {
     _tokenIn?: Token,
     _tokenOut?: Token,
     providerConfig?: ProviderConfig
-  ): Promise<V2SubgraphPool[]> {
+  ): Promise<ClassicSubgraphPool[]> {
     let blockNumber = providerConfig?.blockNumber
       ? await providerConfig.blockNumber
       : undefined;
@@ -95,16 +95,16 @@ export class V2SubgraphProvider implements IV2SubgraphProvider {
                 token0 { id, symbol }
                 token1 { id, symbol }
                 totalSupply
-                trackedReserveETH
+                trackedReserveAMB
                 reserveUSD
             }
         }
     `;
 
-    let pools: RawV2SubgraphPool[] = [];
+    let pools: RawClassicSubgraphPool[] = [];
 
     log.info(
-      `Getting V2 pools from the subgraph with page size ${this.pageSize}${
+      `Getting Classic pools from the subgraph with page size ${this.pageSize}${
         providerConfig?.blockNumber
           ? ` as of block ${providerConfig?.blockNumber}`
           : ''
@@ -115,16 +115,16 @@ export class V2SubgraphProvider implements IV2SubgraphProvider {
       async () => {
         const timeout = new Timeout();
 
-        const getPools = async (): Promise<RawV2SubgraphPool[]> => {
+        const getPools = async (): Promise<RawClassicSubgraphPool[]> => {
           let lastId = '';
-          let pairs: RawV2SubgraphPool[] = [];
-          let pairsPage: RawV2SubgraphPool[] = [];
+          let pairs: RawClassicSubgraphPool[] = [];
+          let pairsPage: RawClassicSubgraphPool[] = [];
 
           do {
             await retry(
               async () => {
                 const poolsResult = await this.client.request<{
-                  pairs: RawV2SubgraphPool[];
+                  pairs: RawClassicSubgraphPool[];
                 }>(query2, {
                   pageSize: this.pageSize,
                   id: lastId,
@@ -170,7 +170,7 @@ export class V2SubgraphProvider implements IV2SubgraphProvider {
       },
       {
         retries: this.retries,
-        onRetry: (err, retry) => {
+        onRetry: (err: Error, retry) => {
           if (
             this.rollback &&
             blockNumber &&
@@ -190,20 +190,20 @@ export class V2SubgraphProvider implements IV2SubgraphProvider {
       }
     );
 
-    // Filter pools that have tracked reserve ETH less than threshold.
-    // trackedReserveETH filters pools that do not involve a pool from this allowlist:
+    // Filter pools that have tracked reserve AMB less than threshold.
+    // trackedReserveAMB filters pools that do not involve a pool from this allowlist:
     // https://github.com/Uniswap/v2-subgraph/blob/7c82235cad7aee4cfce8ea82f0030af3d224833e/src/mappings/pricing.ts#L43
     // Which helps filter pools with manipulated prices/liquidity.
 
-    // TODO: Remove. Temporary fix to ensure tokens without trackedReserveETH are in the list.
+    // TODO: Remove. Temporary fix to ensure tokens without trackedReserveAMB are in the list.
     const FEI = '0x956f47f50a910163d8bf957cf5846d573e7f87ca';
 
-    const poolsSanitized: V2SubgraphPool[] = pools
+    const poolsSanitized: ClassicSubgraphPool[] = pools
       .filter((pool) => {
         return (
           pool.token0.id == FEI ||
           pool.token1.id == FEI ||
-          parseFloat(pool.trackedReserveETH) > threshold
+          parseFloat(pool.trackedReserveAMB) > threshold
         );
       })
       .map((pool) => {
@@ -217,13 +217,13 @@ export class V2SubgraphProvider implements IV2SubgraphProvider {
             id: pool.token1.id.toLowerCase(),
           },
           supply: parseFloat(pool.totalSupply),
-          reserve: parseFloat(pool.trackedReserveETH),
+          reserve: parseFloat(pool.trackedReserveAMB),
           reserveUSD: parseFloat(pool.reserveUSD),
         };
       });
 
     log.info(
-      `Got ${pools.length} V2 pools from the subgraph. ${poolsSanitized.length} after filtering`
+      `Got ${pools.length} Classic pools from the subgraph. ${poolsSanitized.length} after filtering`
     );
 
     return poolsSanitized;

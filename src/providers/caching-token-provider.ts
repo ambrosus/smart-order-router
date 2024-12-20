@@ -1,4 +1,4 @@
-import { ChainId, Token } from '@airdao/sdk-core';
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
 import { log, WRAPPED_NATIVE_CURRENCY } from '../util';
@@ -57,7 +57,7 @@ export const CACHE_SEED_TOKENS: {
   [chainId in ChainId]?: { [symbol: string]: Token };
 } = {
   [ChainId.MAINNET]: {
-    WETH: WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]!,
+    SAMB: WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]!,
     USDC: USDC_MAINNET,
     USDT: USDT_MAINNET,
     WBTC: WBTC_MAINNET,

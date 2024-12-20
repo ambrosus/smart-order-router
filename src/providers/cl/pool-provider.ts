@@ -1,11 +1,10 @@
+import { computePoolAddress, FeeAmount, Pool } from '@airdao/astra-cl-sdk';
+import { ChainId, Token } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Token } from '@airdao/sdk-core';
-import { computePoolAddress, FeeAmount, Pool } from '@airdao/v3-sdk';
 import retry, { Options as RetryOptions } from 'async-retry';
 import _ from 'lodash';
-
-import { IUniswapV3PoolState__factory } from '../../types/v3/factories/IUniswapV3PoolState__factory';
-import { V3_CORE_FACTORY_ADDRESSES } from '../../util/addresses';
+import { IAstraCLPoolState__factory } from '../../types/cl';
+import { CL_CORE_FACTORY_ADDRESSES } from '../../util/addresses';
 import { log } from '../../util/log';
 import { poolToString } from '../../util/routes';
 import { IMulticallProvider, Result } from '../multicall-provider';
@@ -24,12 +23,12 @@ type ISlot0 = {
 type ILiquidity = { liquidity: BigNumber };
 
 /**
- * Provider or getting V3 pools.
+ * Provider or getting CL pools.
  *
  * @export
- * @interface IV3PoolProvider
+ * @interface ICLPoolProvider
  */
-export interface IV3PoolProvider {
+export interface ICLPoolProvider {
   /**
    * Gets the specified pools.
    *
@@ -40,7 +39,7 @@ export interface IV3PoolProvider {
   getPools(
     tokenPairs: [Token, Token, FeeAmount][],
     providerConfig?: ProviderConfig
-  ): Promise<V3PoolAccessor>;
+  ): Promise<CLPoolAccessor>;
 
   /**
    * Gets the pool address for the specified token pair and fee tier.
@@ -57,7 +56,7 @@ export interface IV3PoolProvider {
   ): { poolAddress: string; token0: Token; token1: Token };
 }
 
-export type V3PoolAccessor = {
+export type CLPoolAccessor = {
   getPool: (
     tokenA: Token,
     tokenB: Token,
@@ -67,15 +66,15 @@ export type V3PoolAccessor = {
   getAllPools: () => Pool[];
 };
 
-export type V3PoolRetryOptions = RetryOptions;
+export type CLPoolRetryOptions = RetryOptions;
 
-export class V3PoolProvider implements IV3PoolProvider {
+export class CLPoolProvider implements ICLPoolProvider {
   // Computing pool addresses is slow as it requires hashing, encoding etc.
   // Addresses never change so can always be cached.
   private POOL_ADDRESS_CACHE: { [key: string]: string } = {};
 
   /**
-   * Creates an instance of V3PoolProvider.
+   * Creates an instance of CLPoolProvider.
    * @param chainId The chain id to use.
    * @param multicall2Provider The multicall provider to use to get the pools.
    * @param retryOptions The retry options for each call to the multicall.
@@ -83,7 +82,7 @@ export class V3PoolProvider implements IV3PoolProvider {
   constructor(
     protected chainId: ChainId,
     protected multicall2Provider: IMulticallProvider,
-    protected retryOptions: V3PoolRetryOptions = {
+    protected retryOptions: CLPoolRetryOptions = {
       retries: 2,
       minTimeout: 50,
       maxTimeout: 500,
@@ -93,7 +92,7 @@ export class V3PoolProvider implements IV3PoolProvider {
   public async getPools(
     tokenPairs: [Token, Token, FeeAmount][],
     providerConfig?: ProviderConfig
-  ): Promise<V3PoolAccessor> {
+  ): Promise<CLPoolAccessor> {
     const poolAddressSet: Set<string> = new Set<string>();
     const sortedTokenPairs: Array<[Token, Token, FeeAmount]> = [];
     const sortedPoolAddresses: string[] = [];
@@ -225,7 +224,7 @@ export class V3PoolProvider implements IV3PoolProvider {
     }
 
     const poolAddress = computePoolAddress({
-      factoryAddress: V3_CORE_FACTORY_ADDRESSES[this.chainId]!,
+      factoryAddress: CL_CORE_FACTORY_ADDRESSES[this.chainId]!,
       tokenA: token0,
       tokenB: token1,
       fee: feeAmount,
@@ -247,7 +246,7 @@ export class V3PoolProvider implements IV3PoolProvider {
         TReturn
       >({
         addresses: poolAddresses,
-        contractInterface: IUniswapV3PoolState__factory.createInterface(),
+        contractInterface: IAstraCLPoolState__factory.createInterface(),
         functionName: functionName,
         providerConfig,
       });

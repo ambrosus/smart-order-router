@@ -1,16 +1,16 @@
-import { ChainId } from '@airdao/sdk-core';
+import { ChainId } from '@airdao/astra-sdk-core';
 import retry from 'async-retry';
 import Timeout from 'await-timeout';
 import axios from 'axios';
 
 import { log } from '../util/log';
 
-import { V2SubgraphPool } from './v2/subgraph-provider';
-import { V3SubgraphPool } from './v3/subgraph-provider';
+import { CLSubgraphPool } from './cl/subgraph-provider';
+import { ClassicSubgraphPool } from './classic/subgraph-provider';
 
 /**
  * Gets subgraph pools from a URI. The URI shoudl contain a JSON
- * stringified array of V2SubgraphPool objects or V3SubgraphPool
+ * stringified array of ClassicSubgraphPool objects or CLSubgraphPool
  * objects.
  *
  * @export
@@ -18,7 +18,7 @@ import { V3SubgraphPool } from './v3/subgraph-provider';
  * @template TSubgraphPool
  */
 export class URISubgraphProvider<
-  TSubgraphPool extends V2SubgraphPool | V3SubgraphPool
+  TSubgraphPool extends ClassicSubgraphPool | CLSubgraphPool
 > {
   constructor(
     private chainId: ChainId,

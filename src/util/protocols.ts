@@ -1,11 +1,11 @@
-import { Protocol } from '@airdao/router-sdk';
+import { Protocol } from '@airdao/astra-router-sdk';
 
 export const TO_PROTOCOL = (protocol: string): Protocol => {
   switch (protocol.toLowerCase()) {
-    case 'v3':
-      return Protocol.V3;
-    case 'v2':
-      return Protocol.V2;
+    case 'cl':
+      return Protocol.CL;
+    case 'classic':
+      return Protocol.Classic;
     case 'mixed':
       return Protocol.MIXED;
     default:

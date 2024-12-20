@@ -1,9 +1,9 @@
-import { parseUnits } from '@ethersproject/units';
+import { FeeAmount } from '@airdao/astra-cl-sdk';
 import {
   Currency,
   CurrencyAmount as CurrencyAmountRaw,
-} from '@airdao/sdk-core';
-import { FeeAmount } from '@airdao/v3-sdk';
+} from '@airdao/astra-sdk-core';
+import { parseUnits } from '@ethersproject/units';
 import JSBI from 'jsbi';
 
 export class CurrencyAmount extends CurrencyAmountRaw<Currency> {}

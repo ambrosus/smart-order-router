@@ -1,4 +1,4 @@
-import { Currency, Ether } from '@airdao/sdk-core';
+import { Currency, Ether } from '@airdao/astra-sdk-core';
 import { BigNumber } from 'ethers';
 import { DAI_MAINNET, V2Route } from '../../../../../src';
 import {
