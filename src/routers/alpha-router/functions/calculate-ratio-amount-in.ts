@@ -1,6 +1,6 @@
 import { Fraction } from '@airdao/astra-sdk-core';
 
-import { CurrencyAmount } from '../../../util/amounts';
+import { CurrencyAmount } from '../../../util';
 
 export function calculateRatioAmountIn(
   optimalRatio: Fraction,

@@ -4,8 +4,12 @@ import { Protocol } from '@airdao/astra-router-sdk';
 import { Percent } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
-import { RouteWithValidQuote } from '../routers/alpha-router';
-import { ClassicRoute, CLRoute, MixedRoute } from '../routers/router';
+import {
+  ClassicRoute,
+  CLRoute,
+  MixedRoute,
+  RouteWithValidQuote,
+} from '../routers';
 
 import { CL_CORE_FACTORY_ADDRESSES } from './addresses';
 
@@ -66,7 +70,7 @@ export const routeAmountsToString = (
   const routeStrings = _.map(routeAmounts, ({ protocol, route, amount }) => {
     const portion = amount.divide(total);
     const percent = new Percent(portion.numerator, portion.denominator);
-    /// @dev special case for MIXED routes we want to show user friendly Classic+CL instead
+    /// @dev special case for MIXED routes we want to show user-friendly Classic+CL instead
     return `[${
       protocol == Protocol.MIXED ? 'Classic + CL' : protocol
     }] ${percent.toFixed(2)}% = ${routeToString(route)}`;

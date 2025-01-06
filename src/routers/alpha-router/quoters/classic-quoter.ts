@@ -31,10 +31,12 @@ import { IClassicGasModelFactory, IGasModel } from '../gas-models';
 import { NATIVE_OVERHEAD } from '../gas-models/cl/gas-costs';
 
 import { BaseQuoter } from './base-quoter';
-import { GetQuotesResult } from './model/results/get-quotes-result';
-import { GetRoutesResult } from './model/results/get-routes-result';
+import { GetQuotesResult, GetRoutesResult } from './model';
 
-export class ClassicQuoter extends BaseQuoter<ClassicCandidatePools, ClassicRoute> {
+export class ClassicQuoter extends BaseQuoter<
+  ClassicCandidatePools,
+  ClassicRoute
+> {
   protected classicSubgraphProvider: IClassicSubgraphProvider;
   protected classicPoolProvider: IClassicPoolProvider;
   protected classicQuoteProvider: IClassicQuoteProvider;
@@ -160,8 +162,12 @@ export class ClassicQuoter extends BaseQuoter<ClassicCandidatePools, ClassicRout
     // For all our routes, and all the fractional amounts, fetch quotes on-chain.
     const quoteFn =
       tradeType == TradeType.EXACT_INPUT
-        ? this.classicQuoteProvider.getQuotesManyExactIn.bind(this.classicQuoteProvider)
-        : this.classicQuoteProvider.getQuotesManyExactOut.bind(this.classicQuoteProvider);
+        ? this.classicQuoteProvider.getQuotesManyExactIn.bind(
+            this.classicQuoteProvider
+          )
+        : this.classicQuoteProvider.getQuotesManyExactOut.bind(
+            this.classicQuoteProvider
+          );
 
     const beforeQuotes = Date.now();
 

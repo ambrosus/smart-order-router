@@ -8,11 +8,11 @@ import { IAstraPair__factory } from '../../types/classic';
 import {
   CurrencyAmount,
   ID_TO_NETWORK_NAME,
+  log,
   metric,
   MetricLoggerUnit,
+  poolToString,
 } from '../../util';
-import { log } from '../../util/log';
-import { poolToString } from '../../util/routes';
 import { IMulticallProvider, Result } from '../multicall-provider';
 import { ProviderConfig } from '../provider';
 import { ITokenPropertiesProvider } from '../token-properties-provider';

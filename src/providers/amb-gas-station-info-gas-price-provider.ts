@@ -2,7 +2,7 @@ import { BigNumber } from '@ethersproject/bignumber';
 import retry from 'async-retry';
 import axios from 'axios';
 
-import { log } from '../util/log';
+import { log } from '../util';
 
 import { GasPrice, IGasPriceProvider } from './gas-price-provider';
 
@@ -23,6 +23,7 @@ export type AMBGasStationResponse = {
 
 export class AMBGasStationInfoProvider extends IGasPriceProvider {
   private url: string;
+
   constructor(url: string) {
     super();
     this.url = url;

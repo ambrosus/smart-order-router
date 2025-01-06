@@ -1,6 +1,6 @@
 import { ChainId } from '@airdao/astra-sdk-core';
 
-import { log } from '../util/log';
+import { log } from '../util';
 
 import { ICache } from './cache';
 import { GasPrice, IGasPriceProvider } from './gas-price-provider';

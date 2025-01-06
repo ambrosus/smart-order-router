@@ -29,8 +29,7 @@ import {
 import { IGasModel } from '../gas-models';
 
 import { BaseQuoter } from './base-quoter';
-import { GetQuotesResult } from './model/results/get-quotes-result';
-import { GetRoutesResult } from './model/results/get-routes-result';
+import { GetQuotesResult, GetRoutesResult } from './model';
 
 export class CLQuoter extends BaseQuoter<CLCandidatePools, CLRoute> {
   protected clSubgraphProvider: ICLSubgraphProvider;

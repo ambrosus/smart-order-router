@@ -12,12 +12,7 @@ import { BigNumber } from '@ethersproject/bignumber';
 import JSBI from 'jsbi';
 import _ from 'lodash';
 
-import { IClassicPoolProvider } from '../providers';
-import {
-  ArbitrumGasData,
-  OptimismGasData,
-} from '../providers/cl/gas-data-provider';
-import { ICLPoolProvider } from '../providers/cl/pool-provider';
+import { IClassicPoolProvider, ICLPoolProvider } from '../providers';
 import { IPortionProvider } from '../providers/portion-provider';
 import { ProviderConfig } from '../providers/provider';
 import {
@@ -217,88 +212,19 @@ export async function getGasCostInQuoteToken(
   return gasCostQuoteToken;
 }
 
-export function calculateArbitrumToL1FeeFromCalldata(
-  calldata: string,
-  gasData: ArbitrumGasData
-): [BigNumber, BigNumber] {
-  const { perL2TxFee, perL1CalldataFee } = gasData;
-  // calculates gas amounts based on bytes of calldata, use 0 as overhead.
-  const l1GasUsed = getL2ToL1GasUsed(calldata, BigNumber.from(0));
-  // multiply by the fee per calldata and add the flat l2 fee
-  let l1Fee = l1GasUsed.mul(perL1CalldataFee);
-  l1Fee = l1Fee.add(perL2TxFee);
-  return [l1GasUsed, l1Fee];
-}
-
-export function calculateOptimismToL1FeeFromCalldata(
-  calldata: string,
-  gasData: OptimismGasData
-): [BigNumber, BigNumber] {
-  const { l1BaseFee, scalar, decimals, overhead } = gasData;
-
-  const l1GasUsed = getL2ToL1GasUsed(calldata, overhead);
-  // l1BaseFee is L1 Gas Price on etherscan
-  const l1Fee = l1GasUsed.mul(l1BaseFee);
-  const unscaled = l1Fee.mul(scalar);
-  // scaled = unscaled / (10 ** decimals)
-  const scaledConversion = BigNumber.from(10).pow(decimals);
-  const scaled = unscaled.div(scaledConversion);
-  return [l1GasUsed, scaled];
-}
-
-// based on the code from the optimism OVM_GasPriceOracle contract
-export function getL2ToL1GasUsed(data: string, overhead: BigNumber): BigNumber {
-  // data is hex encoded
-  const dataArr: string[] = data.slice(2).match(/.{1,2}/g)!;
-  const numBytes = dataArr.length;
-  let count = 0;
-  for (let i = 0; i < numBytes; i += 1) {
-    const byte = parseInt(dataArr[i]!, 16);
-    if (byte == 0) {
-      count += 4;
-    } else {
-      count += 16;
-    }
-  }
-  const unsigned = overhead.add(count);
-  const signedConversion = 68 * 16;
-  return unsigned.add(signedConversion);
-}
-
 export async function calculateGasUsed(
   chainId: ChainId,
   route: SwapRoute,
   simulatedGasUsed: BigNumber,
   classicPoolProvider: IClassicPoolProvider,
   clPoolProvider: ICLPoolProvider,
-  l2GasData?: ArbitrumGasData | OptimismGasData,
   providerConfig?: ProviderConfig
 ) {
   const quoteToken = route.quote.currency.wrapped;
   const gasPriceWei = route.gasPriceWei;
-  // calculate L2 to L1 security fee if relevant
-  let l2toL1FeeInWei = BigNumber.from(0);
-  if ([ChainId.ARBITRUM_ONE, ChainId.ARBITRUM_GOERLI].includes(chainId)) {
-    l2toL1FeeInWei = calculateArbitrumToL1FeeFromCalldata(
-      route.methodParameters!.calldata,
-      l2GasData as ArbitrumGasData
-    )[1];
-  } else if (
-    [
-      ChainId.OPTIMISM,
-      ChainId.OPTIMISM_GOERLI,
-      ChainId.BASE,
-      ChainId.BASE_GOERLI,
-    ].includes(chainId)
-  ) {
-    l2toL1FeeInWei = calculateOptimismToL1FeeFromCalldata(
-      route.methodParameters!.calldata,
-      l2GasData as OptimismGasData
-    )[1];
-  }
+  const feeInWei = BigNumber.from(0);
 
-  // add l2 to l1 fee and wrap fee to native currency
-  const gasCostInWei = gasPriceWei.mul(simulatedGasUsed).add(l2toL1FeeInWei);
+  const gasCostInWei = gasPriceWei.mul(simulatedGasUsed).add(feeInWei);
   const nativeCurrency = WRAPPED_NATIVE_CURRENCY[chainId];
   const costNativeCurrency = getGasCostInNativeCurrency(
     nativeCurrency,
@@ -314,7 +240,6 @@ export async function calculateGasUsed(
   const gasCostUSD = await getGasCostInUSD(usdPool, costNativeCurrency);
 
   let gasCostQuoteToken = costNativeCurrency;
-  // get fee in terms of quote token
   if (!quoteToken.equals(nativeCurrency)) {
     const nativePools = await Promise.all([
       getHighestLiquidityCLNativePool(
@@ -328,7 +253,7 @@ export async function calculateGasUsed(
 
     if (!nativePool) {
       log.info(
-        'Could not find any V2 or V3 pools to convert the cost into the quote token'
+        'Could not find any Classic or CL pools to convert the cost into the quote token'
       );
       gasCostQuoteToken = CurrencyAmount.fromRawAmount(quoteToken, 0);
     } else {

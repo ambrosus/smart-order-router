@@ -3,11 +3,10 @@ import { ChainId, Token } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import _ from 'lodash';
 
-import { IClassicPoolProvider } from '../../../../providers/classic/pool-provider';
+import { IClassicPoolProvider } from '../../../../providers';
 import { ProviderConfig } from '../../../../providers/provider';
-import { log, WRAPPED_NATIVE_CURRENCY } from '../../../../util';
-import { CurrencyAmount } from '../../../../util/amounts';
-import { ClassicRouteWithValidQuote } from '../../entities/route-with-valid-quote';
+import { CurrencyAmount, log, WRAPPED_NATIVE_CURRENCY } from '../../../../util';
+import { ClassicRouteWithValidQuote } from '../../entities';
 import {
   BuildClassicGasModelFactoryType,
   IClassicGasModelFactory,
@@ -28,7 +27,7 @@ export const COST_PER_EXTRA_HOP = BigNumber.from(50000); // 20000, bumped up by 
  * We compute gas estimates off-chain because
  *  1/ Calling eth_estimateGas for a swaps requires the caller to have
  *     the full balance token being swapped, and approvals.
- *  2/ Tracking gas used using a wrapper contract is not accurate with Multicall
+ *  2/ Tracking gas used a wrapper contract is not accurate with Multicall
  *     due to EIP-2929. We would have to make a request for every swap we wanted to estimate.
  *  3/ For Classic we simulate all our swaps off-chain so have no way to track gas used.
  *

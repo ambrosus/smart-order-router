@@ -9,7 +9,6 @@ import {
   initSwapRouteFromExisting,
 } from '../util/gas-factory-helpers';
 
-import { ArbitrumGasData, OptimismGasData } from './cl/gas-data-provider';
 import { ICLPoolProvider } from './cl/pool-provider';
 import { IClassicPoolProvider } from './classic/pool-provider';
 import { IPortionProvider } from './portion-provider';
@@ -41,9 +40,7 @@ export class AmbEstimateGasSimulator extends Simulator {
   async ambEstimateGas(
     fromAddress: string,
     swapOptions: SwapOptions,
-    route: SwapRoute,
-    l2GasData?: ArbitrumGasData | OptimismGasData,
-    providerConfig?: ProviderConfig
+    route: SwapRoute
   ): Promise<SwapRoute> {
     const currencyIn = route.trade.inputAmount.currency;
     let estimatedGasUsed: BigNumber;
@@ -107,9 +104,7 @@ export class AmbEstimateGasSimulator extends Simulator {
       route,
       estimatedGasUsed,
       this.classicPoolProvider,
-      this.clPoolProvider,
-      l2GasData,
-      providerConfig
+      this.clPoolProvider
     );
     return {
       ...initSwapRouteFromExisting(
@@ -143,7 +138,7 @@ export class AmbEstimateGasSimulator extends Simulator {
     fromAddress: string,
     swapOptions: SwapOptions,
     swapRoute: SwapRoute,
-    l2GasData?: OptimismGasData | ArbitrumGasData | undefined,
+    _l2GasData?: undefined,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _providerConfig?: ProviderConfig | undefined
   ): Promise<SwapRoute> {
@@ -157,12 +152,7 @@ export class AmbEstimateGasSimulator extends Simulator {
         this.provider
       ))
     ) {
-      return await this.ambEstimateGas(
-        fromAddress,
-        swapOptions,
-        swapRoute,
-        l2GasData
-      );
+      return await this.ambEstimateGas(fromAddress, swapOptions, swapRoute);
     } else {
       log.info('Token not approved, skipping simulation');
       return {

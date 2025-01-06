@@ -2,8 +2,7 @@ import { Pool } from '@airdao/astra-cl-sdk';
 import { Pair } from '@airdao/astra-classic-sdk';
 import { Token } from '@airdao/astra-sdk-core';
 
-import { log } from '../../../util/log';
-import { poolToString, routeToString } from '../../../util/routes';
+import { log, poolToString, routeToString } from '../../../util';
 import { ClassicRoute, CLRoute, MixedRoute } from '../../router';
 
 export function computeAllCLRoutes(
@@ -55,7 +54,7 @@ export function computeAllMixedRoutes(
     parts,
     maxHops
   );
-  /// filter out pure CL and CLassic routes
+  /// filter out pure CL and Classic routes
   return routesRaw.filter((route) => {
     return (
       !route.pools.every((pool) => pool instanceof Pool) &&

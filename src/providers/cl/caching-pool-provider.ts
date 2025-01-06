@@ -2,11 +2,10 @@ import { FeeAmount, Pool } from '@airdao/astra-cl-sdk';
 import { ChainId, Token } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
-import { metric, MetricLoggerUnit } from '../../util';
-import { log } from '../../util/log';
+import { log, metric, MetricLoggerUnit } from '../../util';
+import { ICache } from '../cache';
+import { ProviderConfig } from '../provider';
 
-import { ICache } from './../cache';
-import { ProviderConfig } from './../provider';
 import { CLPoolAccessor, ICLPoolProvider } from './pool-provider';
 
 /**

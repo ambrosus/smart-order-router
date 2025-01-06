@@ -8,10 +8,9 @@ import _ from 'lodash';
 
 import { WRAPPED_NATIVE_CURRENCY } from '../../../..';
 import { ProviderConfig } from '../../../../providers/provider';
-import { log } from '../../../../util';
-import { CurrencyAmount } from '../../../../util/amounts';
+import { CurrencyAmount, log } from '../../../../util';
 import { getClassicNativePool } from '../../../../util/gas-factory-helpers';
-import { MixedRouteWithValidQuote } from '../../entities/route-with-valid-quote';
+import { MixedRouteWithValidQuote } from '../../entities';
 import {
   BASE_SWAP_COST,
   COST_PER_HOP,
@@ -39,7 +38,7 @@ import {
  * We compute gas estimates off-chain because
  *  1/ Calling eth_estimateGas for a swaps requires the caller to have
  *     the full balance token being swapped, and approvals.
- *  2/ Tracking gas used using a wrapper contract is not accurate with Multicall
+ *  2/ Tracking gas used a wrapper contract is not accurate with Multicall
  *     due to EIP-2929. We would have to make a request for every swap we wanted to estimate.
  *  3/ For CL we simulate all our swaps off-chain so have no way to track gas used.
  *

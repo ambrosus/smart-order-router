@@ -4,24 +4,28 @@ import {
   MixedRouteSDK,
   Protocol,
 } from '@airdao/astra-router-sdk';
-import { ChainId } from '@airdao/astra-sdk-core';
+import {
+  ChainId,
+  MIXED_ROUTE_QUOTER_V1_ADDRESSES,
+} from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider } from '@ethersproject/providers';
 import retry, { Options as RetryOptions } from 'async-retry';
 import _ from 'lodash';
 import stats from 'stats-lite';
 
-import { ClassicRoute, CLRoute, MixedRoute } from '../routers/router';
+import { ClassicRoute, CLRoute, MixedRoute } from '../routers';
 import { IQuoterV2__factory } from '../types/cl';
 import { IMixedRouteQuoterV1__factory } from '../types/other';
-import { ID_TO_NETWORK_NAME, metric, MetricLoggerUnit } from '../util';
 import {
-  MIXED_ROUTE_QUOTER_V1_ADDRESSES,
-  QUOTER_V2_ADDRESSES,
-} from '../util/addresses';
-import { CurrencyAmount } from '../util/amounts';
-import { log } from '../util/log';
-import { routeToString } from '../util/routes';
+  CurrencyAmount,
+  ID_TO_NETWORK_NAME,
+  log,
+  metric,
+  MetricLoggerUnit,
+  QUOTER_CLASSIC_ADDRESSES,
+  routeToString,
+} from '../util';
 
 import { AstraMulticallProvider } from './multicall-astra-provider';
 import { Result } from './multicall-provider';
@@ -300,7 +304,7 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
     }
     const quoterAddress = useMixedRouteQuoter
       ? MIXED_ROUTE_QUOTER_V1_ADDRESSES[this.chainId]
-      : QUOTER_V2_ADDRESSES[this.chainId];
+      : QUOTER_CLASSIC_ADDRESSES[this.chainId];
 
     if (!quoterAddress) {
       throw new Error(
@@ -708,40 +712,6 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
           });
         }
 
-        if (failedQuoteStates.length > 0) {
-          // TODO: Work with Arbitrum to find a solution for making large multicalls with gas limits that always
-          // successfully.
-          //
-          // On Arbitrum we can not set a gas limit for every call in the multicall and guarantee that
-          // we will not run out of gas on the node. This is because they have a different way of accounting
-          // for gas, that seperates storage and compute gas costs, and we can not cover both in a single limit.
-          //
-          // To work around this and avoid throwing errors when really we just couldn't get a quote, we catch this
-          // case and return 0 quotes found.
-          if (
-            (this.chainId == ChainId.ARBITRUM_ONE ||
-              this.chainId == ChainId.ARBITRUM_GOERLI) &&
-            _.every(
-              failedQuoteStates,
-              (failedQuoteState) =>
-                failedQuoteState.reason instanceof ProviderGasError
-            ) &&
-            attemptNumber == this.retryOptions.retries
-          ) {
-            log.error(
-              `Failed to get quotes on Arbitrum due to provider gas error issue. Overriding error to return 0 quotes.`
-            );
-            return {
-              results: [],
-              blockNumber: BigNumber.from(0),
-              approxGasUsedPerSuccessCall: 0,
-            };
-          }
-          throw new Error(
-            `Failed to get ${failedQuoteStates.length} quotes. Reasons: ${reasonForFailureStr}`
-          );
-        }
-
         const callResults = _.map(
           successfulQuoteStates,
           (quoteState) => quoteState.results
@@ -982,7 +952,7 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
       (result) => result.success
     ).length;
 
-    const successRate = (1.0 * numSuccessResults) / numResults;
+    const successRate = numSuccessResults / numResults;
 
     const { quoteMinSuccessRate } = this.batchParams;
     if (successRate < quoteMinSuccessRate) {
@@ -1010,7 +980,7 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
     functionName: string,
     useMixedRouteQuoter: boolean
   ) {
-    /// We do not send any CLRoutes to new qutoer becuase it is not deployed on chains besides mainnet
+    /// We do not send any CLRoutes to new quoter because it is not deployed on chains besides mainnet
     if (
       routes.some((route) => route.protocol === Protocol.CL) &&
       useMixedRouteQuoter
@@ -1020,7 +990,9 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
 
     /// We cannot call quoteExactOutput with Classic or Mixed routes
     if (functionName === 'quoteExactOutput' && useMixedRouteQuoter) {
-      throw new Error('Cannot call quoteExactOutput with Classic or Mixed routes');
+      throw new Error(
+        'Cannot call quoteExactOutput with Classic or Mixed routes'
+      );
     }
   }
 }

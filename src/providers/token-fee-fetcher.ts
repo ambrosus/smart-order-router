@@ -2,8 +2,8 @@ import { ChainId } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider } from '@ethersproject/providers';
 
-import { TokenFeeDetector__factory } from '../types/other/factories/TokenFeeDetector__factory';
 import { TokenFeeDetector } from '../types/other/TokenFeeDetector';
+import { TokenFeeDetector__factory } from '../types/other/factories/TokenFeeDetector__factory';
 import {
   log,
   metric,

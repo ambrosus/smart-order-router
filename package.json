@@ -32,7 +32,7 @@
   "dependencies": {
     "@airdao/astra-router-sdk": "npm:astra-router-sdk@^0.1.8",
     "@airdao/astra-sdk-core": "npm:astra-sdk-core@0.1.4",
-    "@airdao/astra-universal-router-sdk": "npm:astra-universal-router-sdk@^0.1.9",
+    "@airdao/universal-router-sdk": "npm:astra-universal-router-sdk@^0.1.10",
     "@airdao/astra-classic-sdk": "npm:astra-classic-sdk@^0.1.5",
     "@airdao/astra-cl-sdk": "npm:astra-cl-sdk-dev@^0.1.7",
     "@airdao/astra-permit2-sdk": "npm:astra-permit2-sdk@^0.1.1",

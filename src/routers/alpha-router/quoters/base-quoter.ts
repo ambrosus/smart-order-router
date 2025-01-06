@@ -20,7 +20,7 @@ import {
 } from '../../../util';
 import { ClassicRoute, CLRoute, MixedRoute } from '../../router';
 import { AlphaRouterConfig } from '../alpha-router';
-import { RouteWithValidQuote } from '../entities/route-with-valid-quote';
+import { RouteWithValidQuote } from '../entities';
 import {
   CandidatePoolsBySelectionCriteria,
   ClassicCandidatePools,
@@ -28,7 +28,7 @@ import {
 } from '../functions/get-candidate-pools';
 import { IGasModel } from '../gas-models';
 
-import { GetQuotesResult, GetRoutesResult } from './model/results';
+import { GetQuotesResult, GetRoutesResult } from './model';
 
 /**
  * Interface for a Quoter.

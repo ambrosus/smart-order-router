@@ -1,8 +1,8 @@
 import { ApprovalTypes } from '@airdao/astra-router-sdk';
 import { ChainId, Currency, CurrencyAmount } from '@airdao/astra-sdk-core';
 
-import { SwapRouter02__factory } from '../types/other/factories/SwapRouter02__factory';
-import { log, SWAP_ROUTER_02_ADDRESSES } from '../util';
+import { SwapRouter02__factory } from '../types/other';
+import { log, SWAP_ROUTER_ADDRESSES } from '../util';
 
 import { IMulticallProvider } from './multicall-provider';
 
@@ -15,7 +15,7 @@ type TokenApprovalTypes = {
  * Provider for accessing the SwapRouter02 Contract .
  *
  * @export
- * @interface IRouterProvider
+ * @interface ISwapRouterProvider
  */
 export interface ISwapRouterProvider {
   /**
@@ -57,7 +57,7 @@ export class SwapRouterProvider implements ISwapRouterProvider {
         [string, string],
         [ApprovalTypes]
       >({
-        address: SWAP_ROUTER_02_ADDRESSES(this.chainId),
+        address: SWAP_ROUTER_ADDRESSES(this.chainId),
         contractInterface: SwapRouter02__factory.createInterface(),
         functionName: 'getApprovalType',
         functionParams,

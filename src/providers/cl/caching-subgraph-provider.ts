@@ -1,6 +1,7 @@
 import { ChainId } from '@airdao/astra-sdk-core';
 
-import { ICache } from './../cache';
+import { ICache } from '../cache';
+
 import { CLSubgraphPool, ICLSubgraphProvider } from './subgraph-provider';
 
 /**

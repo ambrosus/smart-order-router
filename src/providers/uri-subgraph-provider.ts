@@ -3,7 +3,7 @@ import retry from 'async-retry';
 import Timeout from 'await-timeout';
 import axios from 'axios';
 
-import { log } from '../util/log';
+import { log } from '../util';
 
 import { CLSubgraphPool } from './cl/subgraph-provider';
 import { ClassicSubgraphPool } from './classic/subgraph-provider';

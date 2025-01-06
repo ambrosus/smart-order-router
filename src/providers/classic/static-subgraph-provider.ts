@@ -2,14 +2,7 @@ import { Pair } from '@airdao/astra-classic-sdk';
 import { ChainId, Token } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
-import { WRAPPED_NATIVE_CURRENCY } from '../../util/chains';
-import { log } from '../../util/log';
-import {
-  DAI_MAINNET,
-  USDC_MAINNET,
-  USDT_MAINNET,
-  WBTC_MAINNET,
-} from '../token-provider';
+import { log, WRAPPED_NATIVE_CURRENCY } from '../../util';
 
 import {
   ClassicSubgraphPool,
@@ -21,31 +14,9 @@ type ChainTokenList = {
 };
 
 const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
-  [ChainId.MAINNET]: [
-    WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]!,
-    DAI_MAINNET,
-    USDC_MAINNET,
-    USDT_MAINNET,
-    WBTC_MAINNET,
-  ],
-  [ChainId.GOERLI]: [WRAPPED_NATIVE_CURRENCY[ChainId.GOERLI]!],
-  [ChainId.SEPOLIA]: [WRAPPED_NATIVE_CURRENCY[ChainId.SEPOLIA]!],
-  //v2 not deployed on [optimism, arbitrum, polygon, celo, gnosis, moonbeam, bnb, avalanche] and their testnets
-  [ChainId.OPTIMISM]: [],
-  [ChainId.ARBITRUM_ONE]: [],
-  [ChainId.ARBITRUM_GOERLI]: [],
-  [ChainId.OPTIMISM_GOERLI]: [],
-  [ChainId.POLYGON]: [],
-  [ChainId.POLYGON_MUMBAI]: [],
-  [ChainId.CELO]: [],
-  [ChainId.CELO_ALFAJORES]: [],
-  [ChainId.GNOSIS]: [],
-  [ChainId.MOONBEAM]: [],
-  [ChainId.BNB]: [],
-  [ChainId.AVALANCHE]: [],
-  [ChainId.BASE_GOERLI]: [],
-  [ChainId.BASE]: [],
-  [ChainId.AIRDAO_TEST]: [],
+  [ChainId.MAINNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]!],
+  [ChainId.TESTNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.TESTNET]!],
+  [ChainId.DEVNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.DEVNET]!],
 };
 
 /**

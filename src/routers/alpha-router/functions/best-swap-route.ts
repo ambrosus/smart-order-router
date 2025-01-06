@@ -7,11 +7,14 @@ import FixedReverseHeap from 'mnemonist/fixed-reverse-heap';
 import Queue from 'mnemonist/queue';
 
 import { IPortionProvider } from '../../../providers/portion-provider';
-import { HAS_L1_FEE } from '../../../util';
-import { CurrencyAmount } from '../../../util/amounts';
-import { log } from '../../../util/log';
-import { metric, MetricLoggerUnit } from '../../../util/metric';
-import { routeAmountsToString, routeToString } from '../../../util/routes';
+import {
+  CurrencyAmount,
+  log,
+  metric,
+  MetricLoggerUnit,
+  routeAmountsToString,
+  routeToString,
+} from '../../../util';
 import { SwapOptions } from '../../router';
 import { AlphaRouterConfig } from '../alpha-router';
 import { IGasModel, L1ToL2GasCosts, usdGasTokensByChain } from '../gas-models';
@@ -150,7 +153,7 @@ export async function getBestSwapRouteBy(
   by: (routeQuote: RouteWithValidQuote) => CurrencyAmount,
   routingConfig: AlphaRouterConfig,
   portionProvider: IPortionProvider,
-  gasModel?: IGasModel<CLRouteWithValidQuote>,
+  _gasModel?: IGasModel<CLRouteWithValidQuote>,
   swapConfig?: SwapOptions
 ): Promise<BestSwapRoute | undefined> {
   // Build a map of percentage to sorted list of quotes, with the biggest quote being first in the list.
@@ -219,7 +222,7 @@ export async function getBestSwapRouteBy(
     }
   }
 
-  // We do a BFS. Each additional node in a path represents us adding an additional split to the route.
+  // We do a BFS. Each additional node in a path represents us adding a split to the route.
   const queue = new Queue<{
     percentIndex: number;
     curRoutes: RouteWithValidQuote[];
@@ -347,25 +350,10 @@ export async function getBestSwapRouteBy(
           const quotesNew = _.map(curRoutesNew, (r) => by(r));
           const quoteNew = sumFn(quotesNew);
 
-          let gasCostL1QuoteToken = CurrencyAmount.fromRawAmount(
+          const gasCostL1QuoteToken = CurrencyAmount.fromRawAmount(
             quoteNew.currency,
             0
           );
-
-          if (HAS_L1_FEE.includes(chainId)) {
-            const onlyCLRoutes = curRoutesNew.every(
-              (route) => route.protocol == Protocol.CL
-            );
-
-            if (gasModel == undefined || !onlyCLRoutes) {
-              throw new Error("Can't compute L1 gas fees.");
-            } else {
-              const gasCostL1 = await gasModel.calculateL1GasFees!(
-                curRoutesNew as CLRouteWithValidQuote[]
-              );
-              gasCostL1QuoteToken = gasCostL1.gasCostL1QuoteToken;
-            }
-          }
 
           const quoteAfterL1Adjust =
             routeType == TradeType.EXACT_INPUT
@@ -438,7 +426,7 @@ export async function getBestSwapRouteBy(
   const usdTokenDecimals = usdToken.decimals;
 
   // if on L2, calculate the L1 security fee
-  let gasCostsL1ToL2: L1ToL2GasCosts = {
+  const gasCostsL1ToL2: L1ToL2GasCosts = {
     gasUsedL1: BigNumber.from(0),
     gasCostL1USD: CurrencyAmount.fromRawAmount(usdToken, 0),
     gasCostL1QuoteToken: CurrencyAmount.fromRawAmount(
@@ -447,20 +435,6 @@ export async function getBestSwapRouteBy(
       0
     ),
   };
-  // If swapping on an L2 that includes a L1 security fee, calculate the fee and include it in the gas adjusted quotes
-  if (HAS_L1_FEE.includes(chainId)) {
-    // ensure the gasModel exists and that the swap route is a CL only route
-    const onlyCLRoutes = bestSwap.every(
-      (route) => route.protocol == Protocol.CL
-    );
-    if (gasModel == undefined || !onlyCLRoutes) {
-      throw new Error("Can't compute L1 gas fees.");
-    } else {
-      gasCostsL1ToL2 = await gasModel.calculateL1GasFees!(
-        bestSwap as CLRouteWithValidQuote[]
-      );
-    }
-  }
 
   const { gasCostL1USD, gasCostL1QuoteToken } = gasCostsL1ToL2;
 

@@ -84,7 +84,7 @@ import {
   TokenValidatorProvider,
 } from '../../providers/token-validator-provider';
 import { Erc20__factory } from '../../types/other/factories/Erc20__factory';
-import { SWAP_ROUTER_02_ADDRESSES, WRAPPED_NATIVE_CURRENCY } from '../../util';
+import { SWAP_ROUTER_ADDRESSES, WRAPPED_NATIVE_CURRENCY } from '../../util';
 import { CurrencyAmount } from '../../util/amounts';
 import {
   CLASSIC_SUPPORTED,
@@ -92,8 +92,8 @@ import {
   ID_TO_NETWORK_NAME,
 } from '../../util/chains';
 import {
-  getHighestLiquidityCLNativePool as getHighestLiquidityCLNativePool,
-  getHighestLiquidityCLUSDPool as getHighestLiquidityCLUSDPool,
+  getHighestLiquidityCLNativePool,
+  getHighestLiquidityCLUSDPool,
 } from '../../util/gas-factory-helpers';
 import { log } from '../../util/log';
 import {
@@ -2122,7 +2122,7 @@ export class AlphaRouter
         approvalTypes.approvalTokenIn,
         approvalTypes.approvalTokenOut
       ),
-      to: SWAP_ROUTER_02_ADDRESSES(this.chainId),
+      to: SWAP_ROUTER_ADDRESSES(this.chainId),
     };
   }
 

@@ -22,16 +22,18 @@ import { SwapOptions as UniversalRouterSwapOptions } from '@airdao/universal-rou
 import { BigNumber } from '@ethersproject/bignumber';
 
 import { SimulationStatus } from '../providers';
-import { CurrencyAmount } from '../util/amounts';
+import { CurrencyAmount } from '../util';
 
 import { RouteWithValidQuote } from './alpha-router';
 
 export class CLRoute extends CLRouteRaw<Token, Token> {
   protocol: Protocol.CL = Protocol.CL;
 }
+
 export class ClassicRoute extends ClassicRouteRaw<Token, Token> {
   protocol: Protocol.Classic = Protocol.Classic;
 }
+
 export class MixedRoute extends MixedRouteSDK<Token, Token> {
   protocol: Protocol.MIXED = Protocol.MIXED;
 }
@@ -202,7 +204,7 @@ export type SwapAndAddParameters = {
 };
 
 /**
- * Provides functionality for finding optimal swap routes on the Uniswap protocol.
+ * Provides functionality for finding optimal swap routes on the Astra protocol.
  *
  * @export
  * @abstract

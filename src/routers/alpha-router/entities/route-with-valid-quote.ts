@@ -4,12 +4,10 @@ import { Token, TradeType } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import _ from 'lodash';
 
-import { ICLPoolProvider } from '../../../providers/cl/pool-provider';
-import { IClassicPoolProvider } from '../../../providers/classic/pool-provider';
-import { CurrencyAmount } from '../../../util/amounts';
-import { routeToString } from '../../../util/routes';
+import { IClassicPoolProvider, ICLPoolProvider } from '../../../providers/';
+import { CurrencyAmount, routeToString } from '../../../util';
 import { ClassicRoute, CLRoute, MixedRoute } from '../../router';
-import { IGasModel } from '../gas-models/gas-model';
+import { IGasModel } from '../gas-models';
 
 /**
  * Represents a route, a quote for swapping some amount on it, and other
@@ -65,6 +63,7 @@ export type ClassicRouteWithValidQuoteParams = {
   tradeType: TradeType;
   classicPoolProvider: IClassicPoolProvider;
 };
+
 /**
  * Represents a quote for swapping on a Classic only route. Contains all information
  * such as the route used, the amount specified by the user, the type of quote
@@ -225,13 +224,11 @@ export class CLRouteWithValidQuote implements ICLRouteWithValidQuote {
     this.gasCostInUSD = gasCostInUSD;
     this.gasEstimate = gasEstimate;
 
-    // If its exact out, we need to request *more* of the input token to account for the gas.
+    // If It's exact out, we need to request *more* of the input token to account for the gas.
     if (this.tradeType == TradeType.EXACT_INPUT) {
-      const quoteGasAdjusted = this.quote.subtract(gasCostInToken);
-      this.quoteAdjustedForGas = quoteGasAdjusted;
+      this.quoteAdjustedForGas = this.quote.subtract(gasCostInToken);
     } else {
-      const quoteGasAdjusted = this.quote.add(gasCostInToken);
-      this.quoteAdjustedForGas = quoteGasAdjusted;
+      this.quoteAdjustedForGas = this.quote.add(gasCostInToken);
     }
 
     this.poolAddresses = _.map(
@@ -343,6 +340,6 @@ export class MixedRouteWithValidQuote implements IMixedRouteWithValidQuote {
         : classicPoolProvider.getPoolAddress(p.token0, p.token1).poolAddress;
     });
 
-    this.tokenPath = this.route.path;
+    this.tokenPath = this.route.path.map((currency) => currency as Token);
   }
 }

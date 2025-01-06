@@ -7,12 +7,12 @@ import {
   DAI_ON,
   ExtendedEther,
   nativeOnChain,
+  SAMB,
   UNI_GOERLI,
   UNI_MAINNET,
   USDC_MAINNET,
   USDC_ON,
   USDT_MAINNET,
-  WETH9,
   WNATIVE_ON,
 } from '../../src';
 import { BULLET, BULLET_WITHOUT_TAX } from './mock-data';
@@ -37,7 +37,7 @@ export const WHALES = (token: Currency): string => {
       return '0x8894E0a0c962CB723c1976a4421c95949bE2D4E3';
     case nativeOnChain(ChainId.OPTIMISM):
       return '0x12478d1a60a910C9CbFFb90648766a2bDD5918f5';
-    case WETH9[1]:
+    case SAMB[1]:
       return '0x2fEb1512183545f48f6b9C5b4EbfCaF49CfCa6F3';
     case WNATIVE_ON(ChainId.MAINNET):
       return '0xf04a5cc80b1e94c69b48f5ee68a08cd2f09a7c3e';

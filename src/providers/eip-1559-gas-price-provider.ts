@@ -2,7 +2,7 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import _ from 'lodash';
 
-import { log } from '../util/log';
+import { log } from '../util';
 
 import { GasPrice, IGasPriceProvider } from './gas-price-provider';
 

@@ -1,14 +1,13 @@
+import { PERMIT2_ADDRESS } from '@airdao/astra-permit2-sdk';
 import { ChainId, TradeType } from '@airdao/astra-sdk-core';
-import { PERMIT2_ADDRESS } from '@airdao/universal-router-sdk';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { BigNumber } from 'ethers/lib/ethers';
 
 import { SwapOptions, SwapRoute, SwapType } from '../routers';
 import { Erc20__factory } from '../types/other/factories/Erc20__factory';
 import { Permit2__factory } from '../types/other/factories/Permit2__factory';
-import { CurrencyAmount, log, SWAP_ROUTER_02_ADDRESSES } from '../util';
+import { CurrencyAmount, log, SWAP_ROUTER_ADDRESSES } from '../util';
 
-import { ArbitrumGasData, OptimismGasData } from './cl/gas-data-provider';
 import { IPortionProvider } from './portion-provider';
 import { ProviderConfig } from './provider';
 
@@ -59,7 +58,6 @@ export abstract class Simulator {
     swapRoute: SwapRoute,
     amount: CurrencyAmount,
     quote: CurrencyAmount,
-    l2GasData?: OptimismGasData | ArbitrumGasData,
     providerConfig?: ProviderConfig
   ): Promise<SwapRoute> {
     if (
@@ -78,7 +76,6 @@ export abstract class Simulator {
           fromAddress,
           swapOptions,
           swapRoute,
-          l2GasData,
           providerConfig
         );
       } catch (e) {
@@ -101,7 +98,6 @@ export abstract class Simulator {
     fromAddress: string,
     swapOptions: SwapOptions,
     swapRoute: SwapRoute,
-    l2GasData?: OptimismGasData | ArbitrumGasData,
     providerConfig?: ProviderConfig
   ): Promise<SwapRoute>;
 
@@ -186,7 +182,7 @@ export abstract class Simulator {
         await permit2Contract.allowance(
           fromAddress,
           inputAmount.currency.wrapped.address,
-          SWAP_ROUTER_02_ADDRESSES(this.chainId)
+          SWAP_ROUTER_ADDRESSES(this.chainId)
         );
 
       const nowTimestampS = Math.round(Date.now() / 1000);
@@ -223,7 +219,7 @@ export abstract class Simulator {
 
       const allowance = await tokenContract.allowance(
         fromAddress,
-        SWAP_ROUTER_02_ADDRESSES(this.chainId)
+        SWAP_ROUTER_ADDRESSES(this.chainId)
       );
       const hasAllowance = allowance.gte(
         BigNumber.from(inputAmount.quotient.toString())

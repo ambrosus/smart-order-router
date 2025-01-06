@@ -1,8 +1,13 @@
-import { ChainId, CurrencyAmount, Fraction, Token } from '@airdao/astra-sdk-core';
 import { Pair } from '@airdao/astra-classic-sdk';
+import {
+  ChainId,
+  CurrencyAmount,
+  Fraction,
+  Token,
+} from '@airdao/astra-sdk-core';
 import { BigNumber } from 'ethers';
 import JSBI from 'jsbi';
-import { V2QuoteProvider, V2Route, WETH9 } from '../../../../src';
+import { SAMB, V2QuoteProvider, V2Route } from '../../../../src';
 import { ProviderConfig } from '../../../../src/providers/provider';
 import { computeAllV2Routes } from '../../../../src/routers/alpha-router/functions/compute-all-routes';
 import {
@@ -23,10 +28,10 @@ const inputBulletCurrencyAmount = CurrencyAmount.fromRawAmount(
 );
 const wethOriginalAmount = JSBI.BigInt(10);
 const wethCurrencyAmount = CurrencyAmount.fromRawAmount(
-  WETH9[ChainId.MAINNET],
+  SAMB[ChainId.MAINNET],
   JSBI.exponentiate(
     wethOriginalAmount,
-    JSBI.BigInt(WETH9[ChainId.MAINNET].decimals)
+    JSBI.BigInt(SAMB[ChainId.MAINNET].decimals)
   )
 );
 const stEthOriginalAmount = JSBI.BigInt(10);
@@ -54,7 +59,7 @@ const bulletReserve = CurrencyAmount.fromRawAmount(
   inputBulletCurrencyAmount.multiply(amountFactorForReserves).quotient
 );
 const WETHReserve = CurrencyAmount.fromRawAmount(
-  WETH9[ChainId.MAINNET],
+  SAMB[ChainId.MAINNET],
   wethCurrencyAmount.multiply(amountFactorForReserves).quotient
 );
 const bulletWETHPool = new Pair(bulletReserve, WETHReserve);
@@ -134,7 +139,10 @@ describe('QuoteProvider', () => {
                 expect(pair.reserve1.currency.buyFeeBps).toBeDefined();
               }
 
-              const [outputAmount] = pair.getOutputAmount(currentInputAmount, enableFeeOnTransferFeeFetching);
+              const [outputAmount] = pair.getOutputAmount(
+                currentInputAmount,
+                enableFeeOnTransferFeeFetching
+              );
               currentInputAmount = outputAmount;
 
               if (enableFeeOnTransferFeeFetching) {
@@ -150,11 +158,11 @@ describe('QuoteProvider', () => {
                 if (!nextToken.equals(tokenOut)) {
                   expect(
                     nextToken.sellFeeBps === undefined ||
-                    nextToken.sellFeeBps.eq(BigNumber.from(0))
+                      nextToken.sellFeeBps.eq(BigNumber.from(0))
                   ).toBeTruthy();
                   expect(
                     nextToken.buyFeeBps === undefined ||
-                    nextToken.buyFeeBps.eq(BigNumber.from(0))
+                      nextToken.buyFeeBps.eq(BigNumber.from(0))
                   ).toBeTruthy();
                 }
               }
@@ -172,7 +180,8 @@ describe('QuoteProvider', () => {
               CurrencyAmount.fromRawAmount(
                 tokenOut,
                 quote[index]!.quote!.toString()
-              ).quotient.toString()).toEqual(currentInputAmount.quotient.toString());
+              ).quotient.toString()
+            ).toEqual(currentInputAmount.quotient.toString());
 
             expect(route.input.equals(tokenIn)).toBeTruthy();
             expect(route.output.equals(tokenOut)).toBeTruthy();

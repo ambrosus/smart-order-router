@@ -5,10 +5,8 @@ import {
 import { TradeType } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 
-import { ClassicRoute } from '../../routers/router';
-import { CurrencyAmount } from '../../util/amounts';
-import { log } from '../../util/log';
-import { routeToString } from '../../util/routes';
+import { ClassicRoute } from '../../routers';
+import { CurrencyAmount, log, routeToString } from '../../util';
 import { ProviderConfig } from '../provider';
 
 // Quotes can be null (e.g. pool did not have enough liquidity).

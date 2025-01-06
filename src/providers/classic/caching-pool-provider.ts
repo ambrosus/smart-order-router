@@ -2,10 +2,10 @@ import { Pair } from '@airdao/astra-classic-sdk';
 import { ChainId, Token } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
-import { log } from '../../util/log';
+import { log } from '../../util';
+import { ICache } from '../cache';
+import { ProviderConfig } from '../provider';
 
-import { ICache } from './../cache';
-import { ProviderConfig } from './../provider';
 import { ClassicPoolAccessor, IClassicPoolProvider } from './pool-provider';
 
 /**

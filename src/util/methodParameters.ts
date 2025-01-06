@@ -8,8 +8,9 @@ import {
 } from '@airdao/astra-router-sdk';
 import { ChainId, Currency, TradeType } from '@airdao/astra-sdk-core';
 import {
-  SwapRouter as UniveralRouter,
   UNIVERSAL_ROUTER_ADDRESS,
+  SwapRouter as UniversalRouter,
+  UniversalRouterVersion,
 } from '@airdao/universal-router-sdk';
 import _ from 'lodash';
 
@@ -20,9 +21,9 @@ import {
   MethodParameters,
   MixedRouteWithValidQuote,
   RouteWithValidQuote,
+  SWAP_ROUTER_ADDRESSES,
   SwapOptions,
   SwapType,
-  SWAP_ROUTER_02_ADDRESSES,
 } from '..';
 
 export function buildTrade<TTradeType extends TradeType>(
@@ -235,8 +236,8 @@ export function buildSwapMethodParameters(
 ): MethodParameters {
   if (swapConfig.type == SwapType.UNIVERSAL_ROUTER) {
     return {
-      ...UniveralRouter.swapERC20CallParameters(trade, swapConfig),
-      to: UNIVERSAL_ROUTER_ADDRESS(chainId),
+      ...UniversalRouter.swapCallParameters(trade, swapConfig),
+      to: UNIVERSAL_ROUTER_ADDRESS(UniversalRouterVersion.V2_0, chainId),
     };
   } else if (swapConfig.type == SwapType.SWAP_ROUTER_02) {
     const { recipient, slippageTolerance, deadline, inputTokenPermit } =
@@ -249,7 +250,7 @@ export function buildSwapMethodParameters(
         deadlineOrPreviousBlockhash: deadline,
         inputTokenPermit,
       }),
-      to: SWAP_ROUTER_02_ADDRESSES(chainId),
+      to: SWAP_ROUTER_ADDRESSES(chainId),
     };
   }
 

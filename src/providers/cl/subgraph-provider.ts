@@ -46,25 +46,11 @@ export const printClassicSubgraphPool = (s: ClassicSubgraphPool) =>
 
 const SUBGRAPH_URL_BY_CHAIN: { [chainId in ChainId]?: string } = {
   [ChainId.MAINNET]:
-    'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3',
-  [ChainId.OPTIMISM]:
-    'https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis',
-  [ChainId.ARBITRUM_ONE]:
-    'https://api.thegraph.com/subgraphs/name/ianlapham/arbitrum-minimal',
-  [ChainId.POLYGON]:
-    'https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-polygon',
-  [ChainId.CELO]:
-    'https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo',
-  [ChainId.GOERLI]:
-    'https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-gorli',
-  [ChainId.BNB]:
-    'https://api.thegraph.com/subgraphs/name/ilyamk/uniswap-v3---bnb-chain',
-  [ChainId.AVALANCHE]:
-    'https://api.thegraph.com/subgraphs/name/lynnshaoyu/uniswap-v3-avax',
-  [ChainId.BASE]:
-    'https://api.studio.thegraph.com/query/48211/uniswap-v3-base/version/latest',
-  [ChainId.AIRDAO_TEST]:
-    'http://65.21.250.87:8000/subgraphs/name/airdao/uniswap-v3/graphql',
+    'https://graph-node-api.ambrosus.io/subgraphs/name/airdao/astra-cl/graphql',
+  [ChainId.TESTNET]:
+    'https://graph-node-api.ambrosus-test.io/subgraphs/name/airdao/astra-cl/graphql',
+  [ChainId.DEVNET]:
+    'https://graph-node-api.ambrosus-dev.io/subgraphs/name/airdao/astra-cl/graphql',
 };
 
 const PAGE_SIZE = 1000; // 1k is max possible query size from subgraph.

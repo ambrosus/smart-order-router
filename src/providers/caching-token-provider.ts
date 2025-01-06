@@ -4,53 +4,7 @@ import _ from 'lodash';
 import { log, WRAPPED_NATIVE_CURRENCY } from '../util';
 
 import { ICache } from './cache';
-import {
-  BTC_BNB,
-  BUSD_BNB,
-  CELO,
-  CELO_ALFAJORES,
-  CEUR_CELO,
-  CUSD_CELO,
-  CUSD_CELO_ALFAJORES,
-  DAI_ARBITRUM,
-  DAI_AVAX,
-  DAI_BNB,
-  DAI_CELO,
-  DAI_CELO_ALFAJORES,
-  DAI_MAINNET,
-  DAI_MOONBEAM,
-  DAI_OPTIMISM,
-  DAI_OPTIMISM_GOERLI,
-  DAI_POLYGON_MUMBAI,
-  ETH_BNB,
-  ITokenProvider,
-  TokenAccessor,
-  USDC_AIRDAO_TEST,
-  USDC_ARBITRUM,
-  USDC_ARBITRUM_GOERLI,
-  USDC_AVAX,
-  USDC_BASE,
-  USDC_BNB,
-  USDC_ETHEREUM_GNOSIS,
-  USDC_MAINNET,
-  USDC_MOONBEAM,
-  USDC_OPTIMISM,
-  USDC_OPTIMISM_GOERLI,
-  USDC_POLYGON,
-  USDC_SEPOLIA,
-  USDT_ARBITRUM,
-  USDT_BNB,
-  USDT_MAINNET,
-  USDT_OPTIMISM,
-  USDT_OPTIMISM_GOERLI,
-  WBTC_ARBITRUM,
-  WBTC_MAINNET,
-  WBTC_MOONBEAM,
-  WBTC_OPTIMISM,
-  WBTC_OPTIMISM_GOERLI,
-  WMATIC_POLYGON,
-  WMATIC_POLYGON_MUMBAI,
-} from './token-provider';
+import { ITokenProvider, TokenAccessor } from './token-provider';
 
 // These tokens will added to the Token cache on initialization.
 export const CACHE_SEED_TOKENS: {
@@ -58,98 +12,13 @@ export const CACHE_SEED_TOKENS: {
 } = {
   [ChainId.MAINNET]: {
     SAMB: WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]!,
-    USDC: USDC_MAINNET,
-    USDT: USDT_MAINNET,
-    WBTC: WBTC_MAINNET,
-    DAI: DAI_MAINNET,
-    // This token stores its symbol as bytes32, therefore can not be fetched on-chain using
-    // our token providers.
-    // This workaround adds it to the cache, so we won't try to fetch it on-chain.
-    RING: new Token(
-      ChainId.MAINNET,
-      '0x9469D013805bFfB7D3DEBe5E7839237e535ec483',
-      18,
-      'RING',
-      'RING'
-    ),
   },
-  [ChainId.SEPOLIA]: {
-    USDC: USDC_SEPOLIA,
+  [ChainId.TESTNET]: {
+    SAMB: WRAPPED_NATIVE_CURRENCY[ChainId.TESTNET]!,
   },
-  [ChainId.OPTIMISM]: {
-    USDC: USDC_OPTIMISM,
-    USDT: USDT_OPTIMISM,
-    WBTC: WBTC_OPTIMISM,
-    DAI: DAI_OPTIMISM,
+  [ChainId.DEVNET]: {
+    SAMB: WRAPPED_NATIVE_CURRENCY[ChainId.DEVNET]!,
   },
-  [ChainId.OPTIMISM_GOERLI]: {
-    USDC: USDC_OPTIMISM_GOERLI,
-    USDT: USDT_OPTIMISM_GOERLI,
-    WBTC: WBTC_OPTIMISM_GOERLI,
-    DAI: DAI_OPTIMISM_GOERLI,
-  },
-  [ChainId.ARBITRUM_ONE]: {
-    USDC: USDC_ARBITRUM,
-    USDT: USDT_ARBITRUM,
-    WBTC: WBTC_ARBITRUM,
-    DAI: DAI_ARBITRUM,
-  },
-  [ChainId.ARBITRUM_GOERLI]: {
-    USDC: USDC_ARBITRUM_GOERLI,
-  },
-  [ChainId.POLYGON]: {
-    WMATIC: WMATIC_POLYGON,
-    USDC: USDC_POLYGON,
-  },
-  [ChainId.POLYGON_MUMBAI]: {
-    WMATIC: WMATIC_POLYGON_MUMBAI,
-    DAI: DAI_POLYGON_MUMBAI,
-  },
-  [ChainId.CELO]: {
-    CELO: CELO,
-    CUSD: CUSD_CELO,
-    CEUR: CEUR_CELO,
-    DAI: DAI_CELO,
-  },
-  [ChainId.CELO_ALFAJORES]: {
-    CELO: CELO_ALFAJORES,
-    CUSD: CUSD_CELO_ALFAJORES,
-    CEUR: CUSD_CELO_ALFAJORES,
-    DAI: DAI_CELO_ALFAJORES,
-  },
-  [ChainId.GNOSIS]: {
-    WXDAI: WRAPPED_NATIVE_CURRENCY[ChainId.GNOSIS],
-    USDC_ETHEREUM_GNOSIS: USDC_ETHEREUM_GNOSIS,
-  },
-  [ChainId.MOONBEAM]: {
-    USDC: USDC_MOONBEAM,
-    DAI: DAI_MOONBEAM,
-    WBTC: WBTC_MOONBEAM,
-    WGLMR: WRAPPED_NATIVE_CURRENCY[ChainId.MOONBEAM],
-  },
-  [ChainId.BNB]: {
-    USDC: USDC_BNB,
-    USDT: USDT_BNB,
-    BUSD: BUSD_BNB,
-    ETH: ETH_BNB,
-    DAI: DAI_BNB,
-    BTC: BTC_BNB,
-    WBNB: WRAPPED_NATIVE_CURRENCY[ChainId.BNB],
-  },
-  [ChainId.AVALANCHE]: {
-    USDC: USDC_AVAX,
-    DAI: DAI_AVAX,
-    WAVAX: WRAPPED_NATIVE_CURRENCY[ChainId.AVALANCHE],
-  },
-  [ChainId.BASE]: {
-    USDC: USDC_BASE,
-    WETH: WRAPPED_NATIVE_CURRENCY[ChainId.BASE],
-  },
-  [ChainId.AIRDAO_TEST]: {
-    USDC: USDC_AIRDAO_TEST,
-    WETH: WRAPPED_NATIVE_CURRENCY[ChainId.AIRDAO_TEST],
-  },
-  // Currently we do not have providers for Moonbeam mainnet or Gnosis testnet
 };
 
 /**

@@ -4,72 +4,25 @@ import { ChainId, Token, TradeType } from '@airdao/astra-sdk-core';
 import _ from 'lodash';
 
 import {
+  ClassicPoolAccessor,
   ClassicSubgraphPool,
+  CLPoolAccessor,
+  CLSubgraphPool,
+  IClassicPoolProvider,
   IClassicSubgraphProvider,
+  ICLPoolProvider,
+  ICLSubgraphProvider,
   ITokenListProvider,
+  ITokenProvider,
 } from '../../../providers';
 import {
-  CLPoolAccessor,
-  ICLPoolProvider,
-} from '../../../providers/cl/pool-provider';
-import {
-  CLSubgraphPool,
-  ICLSubgraphProvider,
-} from '../../../providers/cl/subgraph-provider';
-import {
-  ClassicPoolAccessor,
-  IClassicPoolProvider,
-} from '../../../providers/classic/pool-provider';
-import {
-  CELO,
-  CELO_ALFAJORES,
-  CEUR_CELO,
-  CEUR_CELO_ALFAJORES,
-  CUSD_CELO,
-  CUSD_CELO_ALFAJORES,
-  DAI_ARBITRUM,
-  DAI_AVAX,
-  DAI_BNB,
-  DAI_MAINNET,
-  DAI_MOONBEAM,
-  DAI_OPTIMISM,
-  DAI_OPTIMISM_GOERLI,
-  DAI_POLYGON_MUMBAI,
-  DAI_SEPOLIA,
-  FEI_MAINNET,
-  ITokenProvider,
-  USDC_ARBITRUM,
-  USDC_ARBITRUM_GOERLI,
-  USDC_AVAX,
-  USDC_BASE,
-  USDC_BNB,
-  USDC_ETHEREUM_GNOSIS,
-  USDC_MAINNET,
-  USDC_MOONBEAM,
-  USDC_OPTIMISM,
-  USDC_OPTIMISM_GOERLI,
-  USDC_POLYGON,
-  USDC_SEPOLIA,
-  USDT_ARBITRUM,
-  USDT_BNB,
-  USDT_MAINNET,
-  USDT_OPTIMISM,
-  USDT_OPTIMISM_GOERLI,
-  WBTC_ARBITRUM,
-  WBTC_GNOSIS,
-  WBTC_MAINNET,
-  WBTC_MOONBEAM,
-  WBTC_OPTIMISM,
-  WBTC_OPTIMISM_GOERLI,
-  WGLMR_MOONBEAM,
-  WMATIC_POLYGON,
-  WMATIC_POLYGON_MUMBAI,
-  WXDAI_GNOSIS,
-} from '../../../providers/token-provider';
-import { unparseFeeAmount, WRAPPED_NATIVE_CURRENCY } from '../../../util';
-import { parseFeeAmount } from '../../../util/amounts';
-import { log } from '../../../util/log';
-import { metric, MetricLoggerUnit } from '../../../util/metric';
+  log,
+  metric,
+  MetricLoggerUnit,
+  parseFeeAmount,
+  unparseFeeAmount,
+  WRAPPED_NATIVE_CURRENCY,
+} from '../../../util';
 import { AlphaRouterConfig } from '../alpha-router';
 
 export type PoolId = { id: string };
@@ -127,52 +80,9 @@ export type MixedRouteGetCandidatePoolsParams = {
 };
 
 const baseTokensByChain: { [chainId in ChainId]?: Token[] } = {
-  [ChainId.MAINNET]: [
-    USDC_MAINNET,
-    USDT_MAINNET,
-    WBTC_MAINNET,
-    DAI_MAINNET,
-    WRAPPED_NATIVE_CURRENCY[1]!,
-    FEI_MAINNET,
-  ],
-  [ChainId.OPTIMISM]: [
-    DAI_OPTIMISM,
-    USDC_OPTIMISM,
-    USDT_OPTIMISM,
-    WBTC_OPTIMISM,
-  ],
-  [ChainId.SEPOLIA]: [DAI_SEPOLIA, USDC_SEPOLIA],
-  [ChainId.OPTIMISM_GOERLI]: [
-    DAI_OPTIMISM_GOERLI,
-    USDC_OPTIMISM_GOERLI,
-    USDT_OPTIMISM_GOERLI,
-    WBTC_OPTIMISM_GOERLI,
-  ],
-  [ChainId.ARBITRUM_ONE]: [
-    DAI_ARBITRUM,
-    USDC_ARBITRUM,
-    WBTC_ARBITRUM,
-    USDT_ARBITRUM,
-  ],
-  [ChainId.ARBITRUM_GOERLI]: [USDC_ARBITRUM_GOERLI],
-  [ChainId.POLYGON]: [USDC_POLYGON, WMATIC_POLYGON],
-  [ChainId.POLYGON_MUMBAI]: [DAI_POLYGON_MUMBAI, WMATIC_POLYGON_MUMBAI],
-  [ChainId.CELO]: [CUSD_CELO, CEUR_CELO, CELO],
-  [ChainId.CELO_ALFAJORES]: [
-    CUSD_CELO_ALFAJORES,
-    CEUR_CELO_ALFAJORES,
-    CELO_ALFAJORES,
-  ],
-  [ChainId.GNOSIS]: [WBTC_GNOSIS, WXDAI_GNOSIS, USDC_ETHEREUM_GNOSIS],
-  [ChainId.MOONBEAM]: [
-    DAI_MOONBEAM,
-    USDC_MOONBEAM,
-    WBTC_MOONBEAM,
-    WGLMR_MOONBEAM,
-  ],
-  [ChainId.BNB]: [DAI_BNB, USDC_BNB, USDT_BNB],
-  [ChainId.AVALANCHE]: [DAI_AVAX, USDC_AVAX],
-  [ChainId.BASE]: [USDC_BASE],
+  [ChainId.MAINNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]!],
+  [ChainId.TESTNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.TESTNET]!],
+  [ChainId.DEVNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.DEVNET]!],
 };
 
 class SubcategorySelectionPools<SubgraphPool> {
@@ -371,14 +281,11 @@ export async function getCLCandidatePools({
   // theres no need to add more.
   let top2AmbQuoteTokenPool: CLSubgraphPool[] = [];
   if (
-    (WRAPPED_NATIVE_CURRENCY[chainId]?.symbol ==
+    WRAPPED_NATIVE_CURRENCY[chainId]?.symbol ==
       WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]?.symbol &&
-      tokenOut.symbol != 'SAMB' &&
-      tokenOut.symbol != 'SAMB9' &&
-      tokenOut.symbol != 'AMB') ||
-    (WRAPPED_NATIVE_CURRENCY[chainId]?.symbol == WMATIC_POLYGON.symbol &&
-      tokenOut.symbol != 'MATIC' &&
-      tokenOut.symbol != 'WMATIC')
+    tokenOut.symbol != 'SAMB' &&
+    tokenOut.symbol != 'SAMBT' &&
+    tokenOut.symbol != 'AMB'
   ) {
     top2AmbQuoteTokenPool = _(subgraphPoolsSorted)
       .filter((subgraphPool) => {
@@ -929,7 +836,6 @@ export async function getClassicCandidatePools({
     ) {
       poolAddressesSoFar.add(subgraphPool.id);
       topByTVLUsingTokenOut.push(subgraphPool);
-      continue;
     }
   }
 
@@ -1097,7 +1003,6 @@ export async function getClassicCandidatePools({
       ) {
         poolAddressesSoFar.add(subgraphPool.id);
         tokenOutToken1SecondHop.pools.push(subgraphPool);
-        continue;
       }
     }
   }
@@ -1155,14 +1060,20 @@ export async function getClassicCandidatePools({
   log.info(
     {
       topByBaseWithTokenIn: topByBaseWithTokenIn.map(printClassicSubgraphPool),
-      topByBaseWithTokenOut: topByBaseWithTokenOut.map(printClassicSubgraphPool),
+      topByBaseWithTokenOut: topByBaseWithTokenOut.map(
+        printClassicSubgraphPool
+      ),
       topByTVL: topByTVL.map(printClassicSubgraphPool),
       topByTVLUsingTokenIn: topByTVLUsingTokenIn.map(printClassicSubgraphPool),
-      topByTVLUsingTokenOut: topByTVLUsingTokenOut.map(printClassicSubgraphPool),
-      topByTVLUsingTokenInSecondHops:
-        topByTVLUsingTokenInSecondHops.map(printClassicSubgraphPool),
-      topByTVLUsingTokenOutSecondHops:
-        topByTVLUsingTokenOutSecondHops.map(printClassicSubgraphPool),
+      topByTVLUsingTokenOut: topByTVLUsingTokenOut.map(
+        printClassicSubgraphPool
+      ),
+      topByTVLUsingTokenInSecondHops: topByTVLUsingTokenInSecondHops.map(
+        printClassicSubgraphPool
+      ),
+      topByTVLUsingTokenOutSecondHops: topByTVLUsingTokenOutSecondHops.map(
+        printClassicSubgraphPool
+      ),
       top2DirectSwap: topByDirectSwapPool.map(printClassicSubgraphPool),
       top2AmbQuotePool: topByAmbQuoteTokenPool.map(printClassicSubgraphPool),
     },
@@ -1242,7 +1153,10 @@ export async function getMixedRouteCandidatePools({
   const beforeSubgraphPools = Date.now();
   const [
     { subgraphPools: CLSubgraphPools, candidatePools: CLCandidatePools },
-    { subgraphPools: ClassicSubgraphPools, candidatePools: ClassicCandidatePools },
+    {
+      subgraphPools: ClassicSubgraphPools,
+      candidatePools: ClassicCandidatePools,
+    },
   ] = [clCandidatePools, classicCandidatePools];
 
   metric.putMetric(

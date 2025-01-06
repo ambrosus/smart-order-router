@@ -23,12 +23,7 @@ export class CLSubgraphProviderWithFallBacks implements ICLSubgraphProvider {
     for (let i = 0; i < this.fallbacks.length; i++) {
       const provider = this.fallbacks[i]!;
       try {
-        const pools = await provider.getPools(
-          tokenIn,
-          tokenOut,
-          providerConfig
-        );
-        return pools;
+        return await provider.getPools(tokenIn, tokenOut, providerConfig);
       } catch (err) {
         log.info(`Failed to get subgraph pools for CL from fallback #${i}`);
       }
