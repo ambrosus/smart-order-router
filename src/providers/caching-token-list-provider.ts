@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ChainId, Token } from '@airdao/astra-sdk-core';
-import { TokenInfo, TokenList } from '@uniswap/token-lists';
+import { TokenInfo, TokenList } from '@airdao/astra-token-lists';
 import axios from 'axios';
 
 import { log, metric, MetricLoggerUnit } from '../util';

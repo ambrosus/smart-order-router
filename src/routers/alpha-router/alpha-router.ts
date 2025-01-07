@@ -7,10 +7,10 @@ import {
   Token,
   TradeType,
 } from '@airdao/astra-sdk-core';
+import { TokenList } from '@airdao/astra-token-lists';
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers';
 import DEFAULT_TOKEN_LIST from '@uniswap/default-token-list';
-import { TokenList } from '@uniswap/token-lists';
 import retry from 'async-retry';
 import JSBI from 'jsbi';
 import _ from 'lodash';
