@@ -15,9 +15,9 @@ import {
 // When adding new usd gas tokens, ensure the tokens are ordered
 // from tokens with the highest decimals to the lowest decimals.
 export const usdGasTokensByChain: { [chainId in ChainId]?: Token[] } = {
-  [ChainId.MAINNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]!],
-  [ChainId.TESTNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.TESTNET]!],
-  [ChainId.DEVNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.DEVNET]!],
+  [ChainId.MAINNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]!], // TODO
+  [ChainId.TESTNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.TESTNET]!], // TODO
+  [ChainId.DEVNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.DEVNET]!], // TODO
 };
 
 export type BuildOnChainGasModelFactoryType = {
