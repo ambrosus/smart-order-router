@@ -17,12 +17,8 @@ import {
 } from '../../../util';
 import { SwapOptions } from '../../router';
 import { AlphaRouterConfig } from '../alpha-router';
-import { IGasModel, L1ToL2GasCosts, usdGasTokensByChain } from '../gas-models';
-
-import {
-  CLRouteWithValidQuote,
-  RouteWithValidQuote,
-} from './../entities/route-with-valid-quote';
+import { CLRouteWithValidQuote, RouteWithValidQuote } from '../entities';
+import { IGasModel, usdGasTokensByChain } from '../gas-models';
 
 export type BestSwapRoute = {
   quote: CurrencyAmount;
@@ -425,18 +421,12 @@ export async function getBestSwapRouteBy(
   const usdToken = usdGasTokensByChain[chainId]![0]!;
   const usdTokenDecimals = usdToken.decimals;
 
-  // if on L2, calculate the L1 security fee
-  const gasCostsL1ToL2: L1ToL2GasCosts = {
-    gasUsedL1: BigNumber.from(0),
-    gasCostL1USD: CurrencyAmount.fromRawAmount(usdToken, 0),
-    gasCostL1QuoteToken: CurrencyAmount.fromRawAmount(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-      bestSwap[0]?.quoteToken!,
-      0
-    ),
-  };
-
-  const { gasCostL1USD, gasCostL1QuoteToken } = gasCostsL1ToL2;
+  const gasCostL1USD = CurrencyAmount.fromRawAmount(usdToken, 0);
+  const gasCostL1QuoteToken = CurrencyAmount.fromRawAmount(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+    bestSwap[0]?.quoteToken!,
+    0
+  );
 
   // For each gas estimate, normalize decimals to that of the chosen usd token.
   const estimatedGasUsedUSDs = _(bestSwap)

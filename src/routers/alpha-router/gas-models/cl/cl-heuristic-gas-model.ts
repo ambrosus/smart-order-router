@@ -1,5 +1,5 @@
 import { Pool } from '@airdao/astra-cl-sdk';
-import { ChainId, Percent, Price } from '@airdao/astra-sdk-core';
+import { ChainId, Price } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 import _ from 'lodash';
 
@@ -51,63 +51,11 @@ export class CLHeuristicGasModelFactory extends IOnChainGasModelFactory {
     pools,
     amountToken,
     quoteToken,
-    l2GasDataProvider,
     providerConfig,
   }: BuildOnChainGasModelFactoryType): Promise<
     IGasModel<CLRouteWithValidQuote>
   > {
-    l2GasDataProvider ? await l2GasDataProvider.getGasData() : undefined;
     const usdPool: Pool = pools.usdPool;
-
-    const calculateL1GasFees = async (): Promise<{
-      gasUsedL1: BigNumber;
-      gasCostL1USD: CurrencyAmount;
-      gasCostL1QuoteToken: CurrencyAmount;
-    }> => {
-      new Percent(5, 10_000);
-      const l1Used = BigNumber.from(0);
-      const l1FeeInWei = BigNumber.from(0);
-      // wrap fee to native currency
-      const nativeCurrency = WRAPPED_NATIVE_CURRENCY[chainId];
-      const costNativeCurrency = CurrencyAmount.fromRawAmount(
-        nativeCurrency,
-        l1FeeInWei.toString()
-      );
-
-      // convert fee into usd
-      const nativeTokenPrice =
-        usdPool.token0.address == nativeCurrency.address
-          ? usdPool.token0Price
-          : usdPool.token1Price;
-
-      const gasCostL1USD: CurrencyAmount =
-        nativeTokenPrice.quote(costNativeCurrency);
-
-      let gasCostL1QuoteToken = costNativeCurrency;
-      // if the inputted token is not in the native currency, quote a native/quote token pool to get the gas cost in terms of the quote token
-      if (!quoteToken.equals(nativeCurrency)) {
-        const nativePool: Pool | null = pools.nativeQuoteTokenCLPool;
-        if (!nativePool) {
-          log.info(
-            'Could not find a pool to convert the cost into the quote token'
-          );
-          gasCostL1QuoteToken = CurrencyAmount.fromRawAmount(quoteToken, 0);
-        } else {
-          const nativeTokenPrice =
-            nativePool.token0.address == nativeCurrency.address
-              ? nativePool.token0Price
-              : nativePool.token1Price;
-          gasCostL1QuoteToken = nativeTokenPrice.quote(costNativeCurrency);
-        }
-      }
-      // gasUsedL1 is the gas units used calculated from the bytes of the calldata
-      // gasCostL1USD and gasCostL1QuoteToken is the cost of gas in each of those tokens
-      return {
-        gasUsedL1: l1Used,
-        gasCostL1USD,
-        gasCostL1QuoteToken,
-      };
-    };
 
     // If our quote token is SAMB, we don't need to convert our gas use to be in terms
     // of the quote token in order to produce a gas adjusted amount.
@@ -147,7 +95,6 @@ export class CLHeuristicGasModelFactory extends IOnChainGasModelFactory {
 
       return {
         estimateGasCost,
-        calculateL1GasFees,
       };
     }
 
@@ -313,7 +260,6 @@ export class CLHeuristicGasModelFactory extends IOnChainGasModelFactory {
 
     return {
       estimateGasCost: estimateGasCost.bind(this),
-      calculateL1GasFees,
     };
   }
 

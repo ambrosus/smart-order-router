@@ -2,86 +2,22 @@ import { Pool } from '@airdao/astra-cl-sdk';
 import { ChainId, Token } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 
-import {
-  ArbitrumGasData,
-  IL2GasDataProvider,
-  OptimismGasData,
-} from '../../../providers/cl/gas-data-provider';
-import { IClassicPoolProvider } from '../../../providers/classic/pool-provider';
+import { IClassicPoolProvider } from '../../../providers';
 import { ProviderConfig } from '../../../providers/provider';
-import {
-  CUSD_CELO,
-  CUSD_CELO_ALFAJORES,
-  DAI_ARBITRUM,
-  DAI_AVAX,
-  DAI_BNB,
-  DAI_GOERLI,
-  DAI_MAINNET,
-  DAI_OPTIMISM,
-  DAI_OPTIMISM_GOERLI,
-  DAI_POLYGON_MUMBAI,
-  DAI_SEPOLIA,
-  USDC_AIRDAO_TEST,
-  USDC_ARBITRUM,
-  USDC_ARBITRUM_GOERLI,
-  USDC_AVAX,
-  USDC_BASE,
-  USDC_BNB,
-  USDC_ETHEREUM_GNOSIS,
-  USDC_GOERLI,
-  USDC_MAINNET,
-  USDC_MOONBEAM,
-  USDC_OPTIMISM,
-  USDC_OPTIMISM_GOERLI,
-  USDC_POLYGON,
-  USDC_SEPOLIA,
-  USDT_ARBITRUM,
-  USDT_BNB,
-  USDT_GOERLI,
-  USDT_MAINNET,
-  USDT_OPTIMISM,
-  USDT_OPTIMISM_GOERLI,
-  WBTC_GOERLI,
-} from '../../../providers/token-provider';
-import { CurrencyAmount } from '../../../util/amounts';
+import { CurrencyAmount, WRAPPED_NATIVE_CURRENCY } from '../../../util';
 import {
   ClassicRouteWithValidQuote,
   CLRouteWithValidQuote,
   MixedRouteWithValidQuote,
   RouteWithValidQuote,
-} from '../entities/route-with-valid-quote';
+} from '../entities';
 
 // When adding new usd gas tokens, ensure the tokens are ordered
-// from tokens with highest decimals to lowest decimals. For example,
-// DAI_AVAX has 18 decimals and comes before USDC_AVAX which has 6 decimals.
+// from tokens with the highest decimals to the lowest decimals.
 export const usdGasTokensByChain: { [chainId in ChainId]?: Token[] } = {
-  [ChainId.MAINNET]: [DAI_MAINNET, USDC_MAINNET, USDT_MAINNET],
-  [ChainId.ARBITRUM_ONE]: [DAI_ARBITRUM, USDC_ARBITRUM, USDT_ARBITRUM],
-  [ChainId.OPTIMISM]: [DAI_OPTIMISM, USDC_OPTIMISM, USDT_OPTIMISM],
-  [ChainId.OPTIMISM_GOERLI]: [
-    DAI_OPTIMISM_GOERLI,
-    USDC_OPTIMISM_GOERLI,
-    USDT_OPTIMISM_GOERLI,
-  ],
-  [ChainId.ARBITRUM_GOERLI]: [USDC_ARBITRUM_GOERLI],
-  [ChainId.GOERLI]: [DAI_GOERLI, USDC_GOERLI, USDT_GOERLI, WBTC_GOERLI],
-  [ChainId.SEPOLIA]: [USDC_SEPOLIA, DAI_SEPOLIA],
-  [ChainId.POLYGON]: [USDC_POLYGON],
-  [ChainId.POLYGON_MUMBAI]: [DAI_POLYGON_MUMBAI],
-  [ChainId.CELO]: [CUSD_CELO],
-  [ChainId.CELO_ALFAJORES]: [CUSD_CELO_ALFAJORES],
-  [ChainId.GNOSIS]: [USDC_ETHEREUM_GNOSIS],
-  [ChainId.MOONBEAM]: [USDC_MOONBEAM],
-  [ChainId.BNB]: [USDT_BNB, USDC_BNB, DAI_BNB],
-  [ChainId.AVALANCHE]: [DAI_AVAX, USDC_AVAX],
-  [ChainId.BASE]: [USDC_BASE],
-  [ChainId.AIRDAO_TEST]: [USDC_AIRDAO_TEST],
-};
-
-export type L1ToL2GasCosts = {
-  gasUsedL1: BigNumber;
-  gasCostL1USD: CurrencyAmount;
-  gasCostL1QuoteToken: CurrencyAmount;
+  [ChainId.MAINNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]!],
+  [ChainId.TESTNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.TESTNET]!],
+  [ChainId.DEVNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.DEVNET]!],
 };
 
 export type BuildOnChainGasModelFactoryType = {
@@ -91,9 +27,6 @@ export type BuildOnChainGasModelFactoryType = {
   amountToken: Token;
   quoteToken: Token;
   classicPoolProvider: IClassicPoolProvider;
-  l2GasDataProvider?:
-    | IL2GasDataProvider<OptimismGasData>
-    | IL2GasDataProvider<ArbitrumGasData>;
   providerConfig?: ProviderConfig;
 };
 
@@ -117,15 +50,15 @@ export type LiquidityCalculationPools = {
  * We generally compute gas estimates off-chain because
  *  1/ Calling eth_estimateGas for a swaps requires the caller to have
  *     the full balance token being swapped, and approvals.
- *  2/ Tracking gas used using a wrapper contract is not accurate with Multicall
+ *  2/ Tracking gas used a wrapper contract is not accurate with Multicall
  *     due to EIP-2929
  *  3/ For Classic we simulate all our swaps off-chain so have no way to track gas used.
  *
- * Generally these models should be optimized to return quickly by performing any
- * long running operations (like fetching external data) outside of the functions defined.
+ * Generally, these models should be optimized to return quickly by performing any
+ * long-running operations (like fetching external data) outside the functions defined.
  * This is because the functions in the model are called once for every route and every
- * amount that is considered in the algorithm so it is important to minimize the number of
- * long running operations.
+ * amount that is considered in the algorithm, so it is important to minimize the number of
+ * long-running operations.
  */
 export type IGasModel<TRouteWithValidQuote extends RouteWithValidQuote> = {
   estimateGasCost(routeWithValidQuote: TRouteWithValidQuote): {
@@ -133,7 +66,6 @@ export type IGasModel<TRouteWithValidQuote extends RouteWithValidQuote> = {
     gasCostInToken: CurrencyAmount;
     gasCostInUSD: CurrencyAmount;
   };
-  calculateL1GasFees?(routes: TRouteWithValidQuote[]): Promise<L1ToL2GasCosts>;
 };
 
 /**
@@ -178,7 +110,6 @@ export abstract class IOnChainGasModelFactory {
     amountToken,
     quoteToken,
     classicPoolProvider: ClassicPoolProvider,
-    l2GasDataProvider,
     providerConfig,
   }: BuildOnChainGasModelFactoryType): Promise<
     IGasModel<CLRouteWithValidQuote | MixedRouteWithValidQuote>

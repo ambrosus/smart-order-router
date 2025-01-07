@@ -26,17 +26,28 @@ import {
   CachingCLPoolProvider,
   CachingCLSubgraphProvider,
   CachingGasStationProvider,
+  CachingTokenListProvider,
   CachingTokenProviderWithFallback,
+  ClassicPoolProvider,
   ClassicQuoteProvider,
   ClassicSubgraphProviderWithFallBacks,
+  CLPoolProvider,
   CLSubgraphProviderWithFallBacks,
   EIP1559GasPriceProvider,
+  GasPrice,
+  IClassicPoolProvider,
   IClassicQuoteProvider,
   IClassicSubgraphProvider,
+  ICLPoolProvider,
+  ICLSubgraphProvider,
+  IGasPriceProvider,
   IOnChainQuoteProvider,
   IRouteCachingProvider,
   ISwapRouterProvider,
+  ITokenListProvider,
   ITokenPropertiesProvider,
+  ITokenProvider,
+  ITokenValidatorProvider,
   LegacyGasPriceProvider,
   NodeJSCache,
   OnChainGasPriceProvider,
@@ -46,61 +57,36 @@ import {
   StaticCLSubgraphProvider,
   SwapRouterProvider,
   TokenPropertiesProvider,
+  TokenProvider,
+  TokenValidatorProvider,
   URISubgraphProvider,
 } from '../../providers';
-import {
-  CachingTokenListProvider,
-  ITokenListProvider,
-} from '../../providers/caching-token-list-provider';
-import {
-  ArbitrumGasData,
-  ArbitrumGasDataProvider,
-  IL2GasDataProvider,
-  OptimismGasData,
-  OptimismGasDataProvider,
-} from '../../providers/cl/gas-data-provider';
-import {
-  CLPoolProvider,
-  ICLPoolProvider,
-} from '../../providers/cl/pool-provider';
-import { ICLSubgraphProvider } from '../../providers/cl/subgraph-provider';
-import {
-  ClassicPoolProvider,
-  IClassicPoolProvider,
-} from '../../providers/classic/pool-provider';
-import {
-  GasPrice,
-  IGasPriceProvider,
-} from '../../providers/gas-price-provider';
 import {
   IPortionProvider,
   PortionProvider,
 } from '../../providers/portion-provider';
 import { ProviderConfig } from '../../providers/provider';
 import { OnChainTokenFeeFetcher } from '../../providers/token-fee-fetcher';
-import { ITokenProvider, TokenProvider } from '../../providers/token-provider';
-import {
-  ITokenValidatorProvider,
-  TokenValidatorProvider,
-} from '../../providers/token-validator-provider';
 import { Erc20__factory } from '../../types/other/factories/Erc20__factory';
-import { SWAP_ROUTER_ADDRESSES, WRAPPED_NATIVE_CURRENCY } from '../../util';
-import { CurrencyAmount } from '../../util/amounts';
 import {
   CLASSIC_SUPPORTED,
+  CurrencyAmount,
   ID_TO_CHAIN_ID,
   ID_TO_NETWORK_NAME,
-} from '../../util/chains';
+  log,
+  metric,
+  MetricLoggerUnit,
+  SWAP_ROUTER_ADDRESSES,
+  WRAPPED_NATIVE_CURRENCY,
+} from '../../util';
 import {
   getHighestLiquidityCLNativePool,
   getHighestLiquidityCLUSDPool,
 } from '../../util/gas-factory-helpers';
-import { log } from '../../util/log';
 import {
   buildSwapMethodParameters,
   buildTrade,
 } from '../../util/methodParameters';
-import { metric, MetricLoggerUnit } from '../../util/metric';
 import { UNSUPPORTED_TOKENS } from '../../util/unsupported-tokens';
 import {
   ClassicRoute,
@@ -126,7 +112,7 @@ import {
   CLRouteWithValidQuote,
   MixedRouteWithValidQuote,
   RouteWithValidQuote,
-} from './entities/route-with-valid-quote';
+} from './entities';
 import { BestSwapRoute, getBestSwapRoute } from './functions/best-swap-route';
 import { calculateRatioAmountIn } from './functions/calculate-ratio-amount-in';
 import {
@@ -137,15 +123,15 @@ import {
   getCLCandidatePools,
   PoolId,
 } from './functions/get-candidate-pools';
-import { CLHeuristicGasModelFactory } from './gas-models/cl/cl-heuristic-gas-model';
-import { NATIVE_OVERHEAD } from './gas-models/cl/gas-costs';
-import { ClassicHeuristicGasModelFactory } from './gas-models/classic/classic-heuristic-gas-model';
 import {
+  CLHeuristicGasModelFactory,
   IClassicGasModelFactory,
   IGasModel,
   IOnChainGasModelFactory,
   LiquidityCalculationPools,
-} from './gas-models/gas-model';
+} from './gas-models';
+import { NATIVE_OVERHEAD } from './gas-models/cl/gas-costs';
+import { ClassicHeuristicGasModelFactory } from './gas-models/classic/classic-heuristic-gas-model';
 import { MixedRouteHeuristicGasModelFactory } from './gas-models/mixedRoute/mixed-route-heuristic-gas-model';
 import {
   ClassicQuoter,
@@ -231,19 +217,9 @@ export type AlphaRouterParams = {
   swapRouterProvider?: ISwapRouterProvider;
 
   /**
-   * Calls the optimism gas oracle contract to fetch constants for calculating the l1 security fee.
-   */
-  optimismGasDataProvider?: IL2GasDataProvider<OptimismGasData>;
-
-  /**
    * A token validator for detecting fee-on-transfer tokens or tokens that can't be transferred.
    */
   tokenValidatorProvider?: ITokenValidatorProvider;
-
-  /**
-   * Calls the arbitrum gas data contract to fetch constants for calculating the l1 fee.
-   */
-  arbitrumGasDataProvider?: IL2GasDataProvider<ArbitrumGasData>;
 
   /**
    * Simulates swaps and returns new SwapRoute with updated gas estimates.
@@ -333,7 +309,7 @@ export type ProtocolPoolSelection = {
   topNWithEachBaseToken: number;
   /**
    * Given the topNWithEachBaseToken pools, takes the top N pools from the full list.
-   * E.g. for a SAMB -> USDC swap, if topNWithEachBaseToken found SAMB -0.05-> DAI,
+   * E.g., for a SAMB -> USDC swap, if topNWithEachBaseToken found SAMB -0.05-> DAI,
    * SAMB -0.01-> DAI, SAMB -0.05-> USDC, SAMB -0.3-> USDC, a value of 2 would reduce
    * this set to the top 2 pools from that full list.
    */
@@ -448,9 +424,6 @@ export class AlphaRouter
   protected mixedRouteGasModelFactory: IOnChainGasModelFactory;
   protected tokenValidatorProvider?: ITokenValidatorProvider;
   protected blockedTokenListProvider?: ITokenListProvider;
-  protected l2GasDataProvider?:
-    | IL2GasDataProvider<OptimismGasData>
-    | IL2GasDataProvider<ArbitrumGasData>;
   protected simulator?: Simulator;
   protected classicQuoter: ClassicQuoter;
   protected clQuoter: CLQuoter;
@@ -476,9 +449,7 @@ export class AlphaRouter
     classicGasModelFactory,
     mixedRouteGasModelFactory,
     swapRouterProvider,
-    optimismGasDataProvider,
     tokenValidatorProvider,
-    arbitrumGasDataProvider,
     simulator,
     routeCachingProvider,
     tokenPropertiesProvider,
@@ -502,149 +473,25 @@ export class AlphaRouter
     if (onChainQuoteProvider) {
       this.onChainQuoteProvider = onChainQuoteProvider;
     } else {
-      switch (chainId) {
-        case ChainId.OPTIMISM:
-        case ChainId.OPTIMISM_GOERLI:
-          this.onChainQuoteProvider = new OnChainQuoteProvider(
-            chainId,
-            provider,
-            this.multicall2Provider,
-            {
-              retries: 2,
-              minTimeout: 100,
-              maxTimeout: 1000,
-            },
-            {
-              multicallChunk: 110,
-              gasLimitPerCall: 1_200_000,
-              quoteMinSuccessRate: 0.1,
-            },
-            {
-              gasLimitOverride: 3_000_000,
-              multicallChunk: 45,
-            },
-            {
-              gasLimitOverride: 3_000_000,
-              multicallChunk: 45,
-            },
-            {
-              baseBlockOffset: -10,
-              rollback: {
-                enabled: true,
-                attemptsBeforeRollback: 1,
-                rollbackBlockOffset: -10,
-              },
-            }
-          );
-          break;
-        case ChainId.BASE:
-        case ChainId.BASE_GOERLI:
-          this.onChainQuoteProvider = new OnChainQuoteProvider(
-            chainId,
-            provider,
-            this.multicall2Provider,
-            {
-              retries: 2,
-              minTimeout: 100,
-              maxTimeout: 1000,
-            },
-            {
-              multicallChunk: 80,
-              gasLimitPerCall: 1_200_000,
-              quoteMinSuccessRate: 0.1,
-            },
-            {
-              gasLimitOverride: 3_000_000,
-              multicallChunk: 45,
-            },
-            {
-              gasLimitOverride: 3_000_000,
-              multicallChunk: 45,
-            },
-            {
-              baseBlockOffset: -10,
-              rollback: {
-                enabled: true,
-                attemptsBeforeRollback: 1,
-                rollbackBlockOffset: -10,
-              },
-            }
-          );
-          break;
-        case ChainId.ARBITRUM_ONE:
-        case ChainId.ARBITRUM_GOERLI:
-          this.onChainQuoteProvider = new OnChainQuoteProvider(
-            chainId,
-            provider,
-            this.multicall2Provider,
-            {
-              retries: 2,
-              minTimeout: 100,
-              maxTimeout: 1000,
-            },
-            {
-              multicallChunk: 10,
-              gasLimitPerCall: 12_000_000,
-              quoteMinSuccessRate: 0.1,
-            },
-            {
-              gasLimitOverride: 30_000_000,
-              multicallChunk: 6,
-            },
-            {
-              gasLimitOverride: 30_000_000,
-              multicallChunk: 6,
-            }
-          );
-          break;
-        case ChainId.CELO:
-        case ChainId.CELO_ALFAJORES:
-          this.onChainQuoteProvider = new OnChainQuoteProvider(
-            chainId,
-            provider,
-            this.multicall2Provider,
-            {
-              retries: 2,
-              minTimeout: 100,
-              maxTimeout: 1000,
-            },
-            {
-              multicallChunk: 10,
-              gasLimitPerCall: 5_000_000,
-              quoteMinSuccessRate: 0.1,
-            },
-            {
-              gasLimitOverride: 5_000_000,
-              multicallChunk: 5,
-            },
-            {
-              gasLimitOverride: 6_250_000,
-              multicallChunk: 4,
-            }
-          );
-          break;
-        default:
-          this.onChainQuoteProvider = new OnChainQuoteProvider(
-            chainId,
-            provider,
-            this.multicall2Provider,
-            {
-              retries: 2,
-              minTimeout: 100,
-              maxTimeout: 1000,
-            },
-            {
-              multicallChunk: 210,
-              gasLimitPerCall: 705_000,
-              quoteMinSuccessRate: 0.15,
-            },
-            {
-              gasLimitOverride: 2_000_000,
-              multicallChunk: 70,
-            }
-          );
-          break;
-      }
+      this.onChainQuoteProvider = new OnChainQuoteProvider(
+        chainId,
+        provider,
+        this.multicall2Provider,
+        {
+          retries: 2,
+          minTimeout: 100,
+          maxTimeout: 1000,
+        },
+        {
+          multicallChunk: 210,
+          gasLimitPerCall: 705_000,
+          quoteMinSuccessRate: 0.15,
+        },
+        {
+          gasLimitOverride: 2_000_000,
+          multicallChunk: 70,
+        }
+      );
     }
 
     if (tokenValidatorProvider) {
@@ -684,7 +531,7 @@ export class AlphaRouter
       blockedTokenListProvider ??
       new CachingTokenListProvider(
         chainId,
-        UNSUPPORTED_TOKENS as TokenList,
+        UNSUPPORTED_TOKENS as unknown as TokenList,
         new NodeJSCache(new NodeCache({ stdTTL: 3600, useClones: false }))
       );
     this.tokenProvider =
@@ -772,20 +619,6 @@ export class AlphaRouter
     this.swapRouterProvider =
       swapRouterProvider ??
       new SwapRouterProvider(this.multicall2Provider, this.chainId);
-
-    if (chainId === ChainId.OPTIMISM || chainId === ChainId.BASE) {
-      this.l2GasDataProvider =
-        optimismGasDataProvider ??
-        new OptimismGasDataProvider(chainId, this.multicall2Provider);
-    }
-    if (
-      chainId === ChainId.ARBITRUM_ONE ||
-      chainId === ChainId.ARBITRUM_GOERLI
-    ) {
-      this.l2GasDataProvider =
-        arbitrumGasDataProvider ??
-        new ArbitrumGasDataProvider(chainId, this.provider);
-    }
 
     // Initialize the Quoters.
     // Quoters are an abstraction encapsulating the business logic of fetching routes and quotes.
@@ -1483,9 +1316,6 @@ export class AlphaRouter
         // Quote will be in SAMB even if quoteCurrency is AMB
         // So we init a new CurrencyAmount object here
         CurrencyAmount.fromRawAmount(quoteCurrency, quote.quotient.toString()),
-        this.l2GasDataProvider
-          ? await this.l2GasDataProvider!.getGasData()
-          : undefined,
         providerConfig
       );
       metric.putMetric(
@@ -1701,7 +1531,7 @@ export class AlphaRouter
       protocols.includes(Protocol.MIXED) ||
       (noProtocolsSpecified && classicSupportedInChain);
     const mixedProtocolAllowed =
-      [ChainId.MAINNET, ChainId.GOERLI].includes(this.chainId) &&
+      [ChainId.MAINNET].includes(this.chainId) &&
       tradeType === TradeType.EXACT_INPUT;
 
     const beforeGetCandidates = Date.now();
@@ -2027,7 +1857,6 @@ export class AlphaRouter
       amountToken,
       quoteToken,
       classicPoolProvider: this.classicPoolProvider,
-      l2GasDataProvider: this.l2GasDataProvider,
       providerConfig: providerConfig,
     });
 
