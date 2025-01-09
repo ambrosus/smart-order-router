@@ -39,7 +39,7 @@
     "@airdao/astra-token-lists": "^1.0.0",
     "@airdao/swap-router-contracts": "^1.0.1",
     "@airdao/astra-universal-router": "^1.0.2",
-    "@uniswap/default-token-list": "^11.2.0",
+    "@airdao/astra-default-token-list": "^1.0.1",
     "async-retry": "^1.3.1",
     "await-timeout": "^1.1.1",
     "axios": "^0.21.1",

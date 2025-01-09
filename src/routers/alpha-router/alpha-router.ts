@@ -1,4 +1,5 @@
 import { Pool, Position, SqrtPriceMath, TickMath } from '@airdao/astra-cl-sdk';
+import DEFAULT_TOKEN_LIST from '@airdao/astra-default-token-list';
 import { Protocol, SwapRouter, Trade, ZERO } from '@airdao/astra-router-sdk';
 import {
   ChainId,
@@ -10,7 +11,6 @@ import {
 import { TokenList } from '@airdao/astra-token-lists';
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers';
-import DEFAULT_TOKEN_LIST from '@uniswap/default-token-list';
 import retry from 'async-retry';
 import JSBI from 'jsbi';
 import _ from 'lodash';

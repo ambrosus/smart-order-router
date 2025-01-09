@@ -1,5 +1,6 @@
 /// <reference types="./types/bunyan-debug-stream" />
 import { MethodParameters } from '@airdao/astra-cl-sdk';
+import DEFAULT_TOKEN_LIST from '@airdao/astra-default-token-list';
 import {
   ChainId,
   Currency,
@@ -10,7 +11,6 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { Command, flags } from '@oclif/command';
 import { ParserOutput } from '@oclif/parser/lib/parse';
-import DEFAULT_TOKEN_LIST from '@uniswap/default-token-list';
 import bunyan, { default as Logger } from 'bunyan';
 import bunyanDebugStream from 'bunyan-debug-stream';
 import _ from 'lodash';
