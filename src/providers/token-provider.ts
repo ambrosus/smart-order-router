@@ -36,13 +36,30 @@ export type TokenAccessor = {
   getAllTokens: () => Token[];
 };
 
-export const USDC_AIRDAO_TEST = new Token(
-  ChainId.TESTNET,
-  '0xdd82283Fc93Aa4373B6B27a7B25EB3A770fc3aba',
-  18,
-  'USDC',
-  'USD Coin'
-);
+export const USDC_AIRDAO: Record<ChainId, Token> = {
+  [ChainId.MAINNET]: new Token(
+    ChainId.MAINNET,
+    '0xff9f502976e7bd2b4901ad7dd1131bb81e5567de',
+    18,
+    'USDC',
+    'USD Coin'
+  ),
+  [ChainId.TESTNET]: new Token(
+    ChainId.TESTNET,
+    '0xdd82283Fc93Aa4373B6B27a7B25EB3A770fc3aba',
+    18,
+    'USDC',
+    'USD Coin'
+  ),
+  // TODO: Uncomment and add the address when available
+  [ChainId.DEVNET]: new Token(
+    ChainId.DEVNET,
+    'not available',
+    18,
+    'USDC',
+    'USD Coin'
+  ),
+};
 
 export const BOND_AIRDAO_TEST = new Token(
   ChainId.TESTNET,
@@ -227,13 +244,14 @@ export class TokenProvider implements ITokenProvider {
 
 export const USDC_ON = (chainId: ChainId): Token => {
   switch (chainId) {
-    // case ChainId.MAINNET:
-    //   return USDC_AIRDAO_MAIN; TODO: Add mainnet tokens
+    case ChainId.MAINNET:
     case ChainId.TESTNET:
-      return USDC_AIRDAO_TEST;
-    // case ChainId.DEVNET:
-    //   return USDC_AIRDAO_DEV; TODO: Add devnet tokens
-
+    case ChainId.DEVNET:
+      if (USDC_AIRDAO[chainId].address === 'not available') {
+        throw new Error(`USDC address not available for chainId: ${chainId}`);
+      } else {
+        return USDC_AIRDAO[chainId];
+      }
     default:
       throw new Error(`Chain id: ${chainId} not supported`);
   }

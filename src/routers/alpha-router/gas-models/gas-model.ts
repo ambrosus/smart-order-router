@@ -2,9 +2,9 @@ import { Pool } from '@airdao/astra-cl-sdk';
 import { ChainId, Token } from '@airdao/astra-sdk-core';
 import { BigNumber } from '@ethersproject/bignumber';
 
-import { IClassicPoolProvider } from '../../../providers';
+import { IClassicPoolProvider, USDC_AIRDAO } from '../../../providers';
 import { ProviderConfig } from '../../../providers/provider';
-import { CurrencyAmount, WRAPPED_NATIVE_CURRENCY } from '../../../util';
+import { CurrencyAmount } from '../../../util';
 import {
   ClassicRouteWithValidQuote,
   CLRouteWithValidQuote,
@@ -15,9 +15,9 @@ import {
 // When adding new usd gas tokens, ensure the tokens are ordered
 // from tokens with the highest decimals to the lowest decimals.
 export const usdGasTokensByChain: { [chainId in ChainId]?: Token[] } = {
-  [ChainId.MAINNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]!], // TODO
-  [ChainId.TESTNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.TESTNET]!], // TODO
-  [ChainId.DEVNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.DEVNET]!], // TODO
+  [ChainId.MAINNET]: [USDC_AIRDAO[ChainId.MAINNET]!],
+  [ChainId.TESTNET]: [USDC_AIRDAO[ChainId.TESTNET]!],
+  [ChainId.DEVNET]: [USDC_AIRDAO[ChainId.DEVNET]!],
 };
 
 export type BuildOnChainGasModelFactoryType = {
