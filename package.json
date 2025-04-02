@@ -1,6 +1,6 @@
 {
   "name": "@airdao/astra-smart-order-router",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Astra Smart Order Router",
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
@@ -30,11 +30,11 @@
     "node": ">=10"
   },
   "dependencies": {
-    "@airdao/astra-router-sdk": "npm:astra-router-sdk@^0.1.8",
+    "@airdao/astra-router-sdk": "npm:astra-router-sdk@^0.1.9",
     "@airdao/astra-sdk-core": "npm:astra-sdk-core@0.1.4",
-    "@airdao/universal-router-sdk": "npm:astra-universal-router-sdk@^0.1.10",
+    "@airdao/universal-router-sdk": "npm:astra-universal-router-sdk@^0.1.11",
     "@airdao/astra-classic-sdk": "npm:astra-classic-sdk@^0.1.5",
-    "@airdao/astra-cl-sdk": "npm:astra-cl-sdk-dev@^0.1.7",
+    "@airdao/astra-cl-sdk": "npm:astra-cl-sdk-dev@^0.1.8",
     "@airdao/astra-permit2-sdk": "npm:astra-permit2-sdk@^0.1.1",
     "@airdao/astra-token-lists": "^1.0.0",
     "@airdao/swap-router-contracts": "^1.0.1",
