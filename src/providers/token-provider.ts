@@ -54,7 +54,7 @@ export const USDC_AIRDAO: Record<ChainId, Token> = {
   // TODO: Uncomment and add the address when available
   [ChainId.DEVNET]: new Token(
     ChainId.DEVNET,
-    'not available',
+    '0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF',
     18,
     'USDC',
     'USD Coin'
@@ -246,12 +246,8 @@ export const USDC_ON = (chainId: ChainId): Token => {
   switch (chainId) {
     case ChainId.MAINNET:
     case ChainId.TESTNET:
-    case ChainId.DEVNET:
-      if (USDC_AIRDAO[chainId].address === 'not available') {
-        throw new Error(`USDC address not available for chainId: ${chainId}`);
-      } else {
-        return USDC_AIRDAO[chainId];
-      }
+      // case ChainId.DEVNET:
+      return USDC_AIRDAO[chainId];
     default:
       throw new Error(`Chain id: ${chainId} not supported`);
   }
