@@ -18,7 +18,7 @@ import {
 export const usdGasTokensByChain: { [chainId in ChainId]?: Token[] } = {
   [ChainId.MAINNET]: [USDC_AIRDAO[ChainId.MAINNET]!],
   [ChainId.TESTNET]: [USDC_AIRDAO[ChainId.TESTNET]!],
-  [ChainId.DEVNET]: [USDC_AIRDAO[ChainId.DEVNET]!],
+  [ChainId.DEVNET]: [],
 };
 
 export type BuildOnChainGasModelFactoryType = {
